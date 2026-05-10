@@ -25,6 +25,8 @@ private:
     QLineSeries*   m_pressSeries;   // 压力曲线
     QDateTimeAxis* m_axisX;         // 时间轴
     QValueAxis*    m_axisTempY;     // 温度Y轴
+    QValueAxis*    m_axisPressY;    // 压力Y轴（右侧）
+
 
     static const int MAX_POINTS = 300;  // 最多显示300个点（30秒@100ms）
 };
