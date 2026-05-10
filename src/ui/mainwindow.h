@@ -21,6 +21,7 @@ private slots:
     void onStartStopClicked();
     void onAlarmTriggered(const AlarmEvent& event);
     void onAlarmCleared(const QString& channel);
+    void onExportCsv();
 
 private:
     void setupUI();

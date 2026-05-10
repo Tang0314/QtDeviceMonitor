@@ -4,6 +4,12 @@
 #include <QWidget>
 #include <QFont>
 #include <QCoreApplication>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QApplication>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -49,6 +55,35 @@ MainWindow::~MainWindow() {}
 void MainWindow::setupUI()
 {
     setWindowTitle("QtDeviceMonitor - 工业设备监控");
+    // 菜单栏
+    QMenuBar* menuBar = new QMenuBar(this);
+    setMenuBar(menuBar);
+
+    // 文件菜单
+    QMenu* fileMenu = menuBar->addMenu("文件(&F)");
+
+    QAction* exportAction = new QAction("导出 CSV(&E)", this);
+    exportAction->setShortcut(QKeySequence("Ctrl+E"));
+    fileMenu->addAction(exportAction);
+
+    fileMenu->addSeparator();
+
+    QAction* exitAction = new QAction("退出(&Q)", this);
+    exitAction->setShortcut(QKeySequence("Ctrl+Q"));
+    fileMenu->addAction(exitAction);
+
+    // 操作菜单
+    QMenu* ctrlMenu = menuBar->addMenu("操作(&C)");
+    QAction* startAction = new QAction("开始采集(&S)", this);
+    QAction* stopAction  = new QAction("停止采集(&T)", this);
+    ctrlMenu->addAction(startAction);
+    ctrlMenu->addAction(stopAction);
+
+    // 连接菜单信号
+    connect(exportAction, &QAction::triggered, this, &MainWindow::onExportCsv);
+    connect(exitAction,   &QAction::triggered, this, &QApplication::quit);
+    connect(startAction,  &QAction::triggered, [this]{ m_mockGenerator->start(100); });
+    connect(stopAction,   &QAction::triggered, [this]{ m_mockGenerator->stop(); });
     setMinimumSize(400, 300);
 
     QWidget* central = new QWidget(this);
@@ -146,4 +181,24 @@ void MainWindow::onAlarmCleared(const QString& channel)
                        .arg(channel);
     m_alarmList->insertItem(0, item);
     m_alarmList->item(0)->setForeground(Qt::darkGreen);
+}
+
+void MainWindow::onExportCsv()
+{
+    QString filePath = QFileDialog::getSaveFileName(
+        this, "导出 CSV",
+        QCoreApplication::applicationDirPath() + "/userdata/export.csv",
+        "CSV 文件 (*.csv)"
+        );
+    if (filePath.isEmpty()) return;
+
+    QDateTime to   = QDateTime::currentDateTime();
+    QDateTime from = to.addSecs(-3600);  // 导出最近1小时
+
+    if (m_dbManager->exportToCsv(filePath, from, to)) {
+        QMessageBox::information(this, "导出成功",
+                                 "数据已导出到：\n" + filePath);
+    } else {
+        QMessageBox::warning(this, "导出失败", "没有数据或文件写入失败");
+    }
 }
