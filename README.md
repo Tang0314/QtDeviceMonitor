@@ -19,14 +19,14 @@
 
 ## 技术栈
 
-| 类别     | 技术                       |
-| -------- | -------------------------- |
-| 开发语言 | C++17                      |
-| UI 框架  | Qt 6.7.3 Widgets           |
-| 绘图     | Qt Charts                  |
-| 通信     | Qt Network / Qt SerialPort |
-| 数据库   | SQLite (Qt SQL)            |
-| 构建     | CMake 3.21+                |
+| 类别 | 技术 |
+|------|------|
+| 开发语言 | C++17 |
+| UI 框架 | Qt 6.7.3 Widgets |
+| 绘图 | Qt Charts |
+| 通信 | Qt Network / Qt SerialPort |
+| 数据库 | SQLite (Qt SQL) |
+| 构建 | CMake 3.21+ |
 
 ## 快速开始
 
