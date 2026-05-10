@@ -177,6 +177,8 @@ bool DatabaseManager::exportToCsv(
         return false;
 
     QTextStream out(&file);
+    out.setEncoding(QStringConverter::Utf8);
+    out << "\xEF\xBB\xBF";  // UTF-8 BOM，让 Excel 正确识别
     out << "时间,温度(℃),压力(MPa),状态\n";
     for (const auto& data : dataList) {
         out << data.timestamp.toString("yyyy-MM-dd hh:mm:ss") << ","
