@@ -7,6 +7,7 @@
 #include "mock/MockDataGenerator.h"
 #include "ui/ChartWidget.h"
 #include "alarm/AlarmChecker.h"
+#include "data/DatabaseManager.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -30,8 +31,9 @@ private:
     QLabel*      m_timeLabel;
     QPushButton* m_startStopBtn;
     ChartWidget* m_chartWidget;
-    QListWidget* m_alarmList;      // 报警列表
+    QListWidget* m_alarmList;
 
     MockDataGenerator* m_mockGenerator;
     AlarmChecker*      m_alarmChecker;
+    DatabaseManager*   m_dbManager;
 };

@@ -3,11 +3,13 @@
 #include <QHBoxLayout>
 #include <QWidget>
 #include <QFont>
+#include <QCoreApplication>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , m_mockGenerator(new MockDataGenerator(this))
     , m_alarmChecker(new AlarmChecker(this))
+    , m_dbManager(new DatabaseManager(this))
 {
     // 配置报警阈值
     AlarmConfig tempConfig;
@@ -30,8 +32,18 @@ MainWindow::MainWindow(QWidget* parent)
             this, &MainWindow::onAlarmTriggered);
     connect(m_alarmChecker, &AlarmChecker::alarmCleared,
             this, &MainWindow::onAlarmCleared);
-}
 
+    // 初始化数据库（存在程序目录下的 userdata 文件夹）
+    m_dbManager->initialize(
+        QCoreApplication::applicationDirPath() + "/userdata/QtDeviceMonitor.db"
+        );
+
+    // 连接数据存储
+    connect(m_mockGenerator, &MockDataGenerator::dataGenerated,
+            m_dbManager, &DatabaseManager::saveData);
+    connect(m_alarmChecker, &AlarmChecker::alarmTriggered,
+            m_dbManager, &DatabaseManager::saveAlarm);
+}
 MainWindow::~MainWindow() {}
 
 void MainWindow::setupUI()
