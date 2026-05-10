@@ -6,12 +6,14 @@ AlarmChecker::AlarmChecker(QObject* parent)
 
 void AlarmChecker::setTempConfig(const AlarmConfig& config)
 {
-    m_tempConfig = config;
+    m_tempConfig   = config;
+    m_tempAlarming = false;  // 重置状态
 }
 
 void AlarmChecker::setPressConfig(const AlarmConfig& config)
 {
-    m_pressConfig = config;
+    m_pressConfig   = config;
+    m_pressAlarming = false;  // 重置状态
 }
 
 void AlarmChecker::checkData(const DeviceData& data)

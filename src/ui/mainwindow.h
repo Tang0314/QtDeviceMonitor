@@ -8,6 +8,7 @@
 #include "ui/ChartWidget.h"
 #include "alarm/AlarmChecker.h"
 #include "data/DatabaseManager.h"
+#include "ui/SettingsDialog.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -22,6 +23,7 @@ private slots:
     void onAlarmTriggered(const AlarmEvent& event);
     void onAlarmCleared(const QString& channel);
     void onExportCsv();
+    void onSettings();
 
 private:
     void setupUI();
@@ -37,4 +39,7 @@ private:
     MockDataGenerator* m_mockGenerator;
     AlarmChecker*      m_alarmChecker;
     DatabaseManager*   m_dbManager;
+
+    AlarmConfig m_tempConfig;
+    AlarmConfig m_pressConfig;
 };

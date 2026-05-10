@@ -18,15 +18,13 @@ MainWindow::MainWindow(QWidget* parent)
     , m_dbManager(new DatabaseManager(this))
 {
     // 配置报警阈值
-    AlarmConfig tempConfig;
-    tempConfig.highLimit = 28.0;
-    tempConfig.lowLimit  = 15.0;
-    m_alarmChecker->setTempConfig(tempConfig);
+    m_tempConfig.highLimit = 28.0;
+    m_tempConfig.lowLimit  = 15.0;
+    m_alarmChecker->setTempConfig(m_tempConfig);
 
-    AlarmConfig pressConfig;
-    pressConfig.highLimit = 1.2;
-    pressConfig.lowLimit  = 0.9;
-    m_alarmChecker->setPressConfig(pressConfig);
+    m_pressConfig.highLimit = 1.1;
+    m_pressConfig.lowLimit  = 0.98;
+    m_alarmChecker->setPressConfig(m_pressConfig);
 
     setupUI();
 
@@ -73,6 +71,10 @@ void MainWindow::setupUI()
     fileMenu->addAction(exitAction);
 
     // 操作菜单
+    QMenu* settingsMenu = menuBar->addMenu("设置(&S)");
+    QAction* settingsAction = new QAction("报警阈值(&A)", this);
+    settingsMenu->addAction(settingsAction);
+    connect(settingsAction, &QAction::triggered, this, &MainWindow::onSettings);
     QMenu* ctrlMenu = menuBar->addMenu("操作(&C)");
     QAction* startAction = new QAction("开始采集(&S)", this);
     QAction* stopAction  = new QAction("停止采集(&T)", this);
@@ -200,5 +202,19 @@ void MainWindow::onExportCsv()
                                  "数据已导出到：\n" + filePath);
     } else {
         QMessageBox::warning(this, "导出失败", "没有数据或文件写入失败");
+    }
+}
+
+void MainWindow::onSettings()
+{
+    SettingsDialog dlg(this);
+    dlg.setTempConfig(m_tempConfig);
+    dlg.setPressConfig(m_pressConfig);
+
+    if (dlg.exec() == QDialog::Accepted) {
+        m_tempConfig  = dlg.getTempConfig();
+        m_pressConfig = dlg.getPressConfig();
+        m_alarmChecker->setTempConfig(m_tempConfig);
+        m_alarmChecker->setPressConfig(m_pressConfig);
     }
 }
