@@ -16,9 +16,15 @@ set(SOURCES
     src/main.cpp
     src/ui/mainwindow.cpp
     src/ui/mainwindow.h
+    src/data/DeviceData.h
+    src/mock/MockDataGenerator.cpp
+    src/mock/MockDataGenerator.h
 )
 
-qt_add_executable(QtDeviceMonitor ${SOURCES})
+qt_add_executable(QtDeviceMonitor ${SOURCES}
+    src/data/DeviceData.h
+    src/mock/MockDataGenerator.h
+    src/mock/MockDataGenerator.cpp)
 
 target_include_directories(QtDeviceMonitor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
