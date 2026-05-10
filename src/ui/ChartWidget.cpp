@@ -14,8 +14,6 @@ void ChartWidget::setupChart()
 
     m_tempSeries->setName("温度 (℃)");
     m_pressSeries->setName("压力 (MPa)");
-
-    // 设置曲线颜色
     m_tempSeries->setColor(Qt::red);
     m_pressSeries->setColor(Qt::blue);
 
@@ -31,16 +29,24 @@ void ChartWidget::setupChart()
     m_axisX->setTitleText("时间");
     m_axisX->setTickCount(6);
     chart->addAxis(m_axisX, Qt::AlignBottom);
-    m_tempSeries->attachAxis(m_axisX);
-    m_pressSeries->attachAxis(m_axisX);
 
-    // Y轴
+    // 温度Y轴（左侧）
     m_axisTempY = new QValueAxis(this);
     m_axisTempY->setRange(0, 40);
-    m_axisTempY->setTitleText("数值");
+    m_axisTempY->setTitleText("温度 (℃)");
     chart->addAxis(m_axisTempY, Qt::AlignLeft);
+
+    // 压力Y轴（右侧）
+    m_axisPressY = new QValueAxis(this);
+    m_axisPressY->setRange(0.8, 1.3);
+    m_axisPressY->setTitleText("压力 (MPa)");
+    chart->addAxis(m_axisPressY, Qt::AlignRight);
+
+    // 绑定轴
+    m_tempSeries->attachAxis(m_axisX);
     m_tempSeries->attachAxis(m_axisTempY);
-    m_pressSeries->attachAxis(m_axisTempY);
+    m_pressSeries->attachAxis(m_axisX);
+    m_pressSeries->attachAxis(m_axisPressY);
 
     m_chartView = new QChartView(chart, this);
     m_chartView->setRenderHint(QPainter::Antialiasing);
@@ -50,6 +56,12 @@ void ChartWidget::setupChart()
     layout->addWidget(m_chartView);
 }
 
+void ChartWidget::clear()
+{
+    m_tempSeries->clear();
+    m_pressSeries->clear();
+}
+
 void ChartWidget::addData(const DeviceData& data)
 {
     qint64 msec = data.timestamp.toMSecsSinceEpoch();
@@ -57,13 +69,11 @@ void ChartWidget::addData(const DeviceData& data)
     m_tempSeries->append(msec, data.temperature);
     m_pressSeries->append(msec, data.pressure);
 
-    // 超出最大点数则移除最旧的点
     if (m_tempSeries->count() > MAX_POINTS) {
         m_tempSeries->remove(0);
         m_pressSeries->remove(0);
     }
 
-    // 自动滚动X轴
     if (m_tempSeries->count() >= 2) {
         QDateTime tMin = QDateTime::fromMSecsSinceEpoch(
             m_tempSeries->at(0).x());
@@ -71,10 +81,4 @@ void ChartWidget::addData(const DeviceData& data)
             m_tempSeries->at(m_tempSeries->count() - 1).x());
         m_axisX->setRange(tMin, tMax);
     }
-}
-
-void ChartWidget::clear()
-{
-    m_tempSeries->clear();
-    m_pressSeries->clear();
 }
