@@ -16,6 +16,8 @@ MainWindow::MainWindow(QWidget* parent)
     , m_mockGenerator(new MockDataGenerator(this))
     , m_alarmChecker(new AlarmChecker(this))
     , m_dbManager(new DatabaseManager(this))
+    , m_virtualDevice(new VirtualTcpDevice(this))
+    , m_tcpComm(new TcpComm(this))
 {
     // 配置报警阈值
     m_tempConfig.highLimit = 28.0;
@@ -36,6 +38,36 @@ MainWindow::MainWindow(QWidget* parent)
             this, &MainWindow::onAlarmTriggered);
     connect(m_alarmChecker, &AlarmChecker::alarmCleared,
             this, &MainWindow::onAlarmCleared);
+
+    // TCP 通信
+    connect(m_tcpConnBtn, &QPushButton::clicked, this, [this]() {
+        if (!m_useTcp) {
+            // 启动虚拟设备
+            m_virtualDevice->start(8888);
+            // 连接
+            m_tcpComm->connectToDevice("127.0.0.1", 8888);
+            m_mockGenerator->stop();
+            m_startStopBtn->setText("▶ 开始采集");
+            m_useTcp = true;
+            m_tcpConnBtn->setText("断开TCP");
+        } else {
+            m_tcpComm->disconnectFromDevice();
+            m_virtualDevice->stop();
+            m_useTcp = false;
+            m_tcpConnBtn->setText("连接虚拟设备(TCP)");
+        }
+    });
+
+    connect(m_tcpComm, &TcpComm::dataReceived,
+            this, &MainWindow::onDataGenerated);
+    connect(m_tcpComm, &TcpComm::dataReceived,
+            m_alarmChecker, &AlarmChecker::checkData);
+    connect(m_tcpComm, &TcpComm::dataReceived,
+            m_dbManager, &DatabaseManager::saveData);
+    connect(m_tcpComm, &TcpComm::connectionStateChanged,
+            this, &MainWindow::onTcpStateChanged);
+    connect(m_tcpComm, &TcpComm::errorOccurred,
+            this, &MainWindow::onTcpError);
 
     // 初始化数据库（存在程序目录下的 userdata 文件夹）
     m_dbManager->initialize(
@@ -114,6 +146,18 @@ void MainWindow::setupUI()
     mainLayout->addWidget(m_pressLabel);
     mainLayout->addWidget(m_statusLabel);
     mainLayout->addWidget(m_timeLabel);
+
+    // TCP 连接控制
+    m_connLabel  = new QLabel("● 未连接", this);
+    m_connLabel->setStyleSheet("color: gray;");
+    m_tcpConnBtn = new QPushButton("连接虚拟设备(TCP)", this);
+    m_tcpConnBtn->setFixedHeight(35);
+
+    QHBoxLayout* connLayout = new QHBoxLayout();
+    connLayout->addWidget(m_connLabel);
+    connLayout->addStretch();
+    connLayout->addWidget(m_tcpConnBtn);
+    mainLayout->addLayout(connLayout);
 
     // 启动/停止按钮
     m_startStopBtn = new QPushButton("▶ 开始采集", this);
@@ -228,4 +272,21 @@ void MainWindow::onHistory()
 {
     HistoryDialog dlg(m_dbManager, this);
     dlg.exec();
+}
+
+void MainWindow::onTcpStateChanged(bool connected)
+{
+    if (connected) {
+        m_connLabel->setText("● 已连接 TCP 127.0.0.1:8888");
+        m_connLabel->setStyleSheet("color: green;");
+    } else {
+        m_connLabel->setText("● 未连接");
+        m_connLabel->setStyleSheet("color: gray;");
+    }
+}
+
+void MainWindow::onTcpError(const QString& msg)
+{
+    m_connLabel->setText("● 错误: " + msg);
+    m_connLabel->setStyleSheet("color: red;");
 }
