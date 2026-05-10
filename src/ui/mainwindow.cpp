@@ -64,6 +64,11 @@ void MainWindow::setupUI()
     exportAction->setShortcut(QKeySequence("Ctrl+E"));
     fileMenu->addAction(exportAction);
 
+    QAction* historyAction = new QAction("历史查询(&H)", this);
+    historyAction->setShortcut(QKeySequence("Ctrl+H"));
+    fileMenu->addAction(historyAction);
+    connect(historyAction, &QAction::triggered, this, &MainWindow::onHistory);
+
     fileMenu->addSeparator();
 
     QAction* exitAction = new QAction("退出(&Q)", this);
@@ -217,4 +222,10 @@ void MainWindow::onSettings()
         m_alarmChecker->setTempConfig(m_tempConfig);
         m_alarmChecker->setPressConfig(m_pressConfig);
     }
+}
+
+void MainWindow::onHistory()
+{
+    HistoryDialog dlg(m_dbManager, this);
+    dlg.exec();
 }
