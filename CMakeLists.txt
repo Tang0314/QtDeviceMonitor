@@ -18,6 +18,8 @@ set(SOURCES
     src/ui/mainwindow.h
     src/ui/ChartWidget.cpp
     src/ui/ChartWidget.h
+    src/ui/SettingsDialog.cpp
+    src/ui/SettingsDialog.h
     src/data/DeviceData.h
     src/data/DatabaseManager.cpp
     src/data/DatabaseManager.h
@@ -36,7 +38,9 @@ qt_add_executable(QtDeviceMonitor ${SOURCES}
     src/alarm/AlarmChecker.h
     src/alarm/AlarmChecker.cpp
     src/data/DatabaseManager.h
-    src/data/DatabaseManager.cpp)
+    src/data/DatabaseManager.cpp
+    src/ui/SettingsDialog.h
+    src/ui/SettingsDialog.cpp)
 
 target_include_directories(QtDeviceMonitor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
