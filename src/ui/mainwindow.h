@@ -9,6 +9,7 @@
 #include "alarm/AlarmChecker.h"
 #include "data/DatabaseManager.h"
 #include "ui/SettingsDialog.h"
+#include "ui/HistoryDialog.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -24,6 +25,7 @@ private slots:
     void onAlarmCleared(const QString& channel);
     void onExportCsv();
     void onSettings();
+    void onHistory();
 
 private:
     void setupUI();
