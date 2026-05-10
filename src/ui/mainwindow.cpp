@@ -49,6 +49,11 @@ void MainWindow::setupUI()
     connect(m_startStopBtn, &QPushButton::clicked,
             this, &MainWindow::onStartStopClicked);
 
+    // 曲线图
+    m_chartWidget = new ChartWidget(this);
+    m_chartWidget->setMinimumHeight(300);
+    mainLayout->addWidget(m_chartWidget);
+
     mainLayout->addStretch();
     mainLayout->addWidget(m_startStopBtn);
 }
@@ -73,6 +78,8 @@ void MainWindow::onDataGenerated(const DeviceData& data)
         m_statusLabel->setText("状态: ✓ OK");
         m_statusLabel->setStyleSheet("color: green;");
     }
+
+    m_chartWidget->addData(data);
 }
 
 void MainWindow::onStartStopClicked()

@@ -6,6 +6,7 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include "mock/MockDataGenerator.h"
+#include "ui/ChartWidget.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -21,13 +22,12 @@ private slots:
 private:
     void setupUI();
 
-    // UI 控件
-    QLabel*      m_tempLabel;      // 温度显示
-    QLabel*      m_pressLabel;     // 压力显示
-    QLabel*      m_statusLabel;    // 状态码显示
-    QLabel*      m_timeLabel;      // 时间显示
-    QPushButton* m_startStopBtn;   // 启动/停止按钮
+    QLabel*      m_tempLabel;
+    QLabel*      m_pressLabel;
+    QLabel*      m_statusLabel;
+    QLabel*      m_timeLabel;
+    QPushButton* m_startStopBtn;
+    ChartWidget* m_chartWidget;
 
-    // 数据生成器
     MockDataGenerator* m_mockGenerator;
 };
