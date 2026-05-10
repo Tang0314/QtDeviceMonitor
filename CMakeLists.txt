@@ -9,13 +9,15 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 6.7 REQUIRED COMPONENTS
-    Core Widgets Network SerialPort Sql
+    Core Widgets Network SerialPort Sql Charts
 )
 
 set(SOURCES
     src/main.cpp
     src/ui/mainwindow.cpp
     src/ui/mainwindow.h
+    src/ui/ChartWidget.cpp
+    src/ui/ChartWidget.h
     src/data/DeviceData.h
     src/mock/MockDataGenerator.cpp
     src/mock/MockDataGenerator.h
@@ -24,7 +26,9 @@ set(SOURCES
 qt_add_executable(QtDeviceMonitor ${SOURCES}
     src/data/DeviceData.h
     src/mock/MockDataGenerator.h
-    src/mock/MockDataGenerator.cpp)
+    src/mock/MockDataGenerator.cpp
+    src/ui/ChartWidget.h
+    src/ui/ChartWidget.cpp)
 
 target_include_directories(QtDeviceMonitor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -37,6 +41,7 @@ target_link_libraries(QtDeviceMonitor PRIVATE
     Qt6::Network
     Qt6::SerialPort
     Qt6::Sql
+    Qt6::Charts
 )
 
 if(WIN32)
