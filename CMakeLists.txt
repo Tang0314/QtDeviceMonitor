@@ -27,6 +27,10 @@ set(SOURCES
     src/data/DatabaseManager.h
     src/mock/MockDataGenerator.cpp
     src/mock/MockDataGenerator.h
+    src/mock/VirtualTcpDevice.cpp
+    src/mock/VirtualTcpDevice.h
+    src/comm/TcpComm.cpp
+    src/comm/TcpComm.h
     src/alarm/AlarmChecker.cpp
     src/alarm/AlarmChecker.h
 )
@@ -44,7 +48,11 @@ qt_add_executable(QtDeviceMonitor ${SOURCES}
     src/ui/SettingsDialog.h
     src/ui/SettingsDialog.cpp
     src/ui/HistoryDialog.h
-    src/ui/HistoryDialog.cpp)
+    src/ui/HistoryDialog.cpp
+    src/comm/TcpComm.h
+    src/comm/TcpComm.cpp
+    src/mock/VirtualTcpDevice.h
+    src/mock/VirtualTcpDevice.cpp)
 
 target_include_directories(QtDeviceMonitor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
