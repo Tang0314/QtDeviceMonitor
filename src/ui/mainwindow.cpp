@@ -7,11 +7,29 @@
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , m_mockGenerator(new MockDataGenerator(this))
+    , m_alarmChecker(new AlarmChecker(this))
 {
+    // 配置报警阈值
+    AlarmConfig tempConfig;
+    tempConfig.highLimit = 28.0;
+    tempConfig.lowLimit  = 15.0;
+    m_alarmChecker->setTempConfig(tempConfig);
+
+    AlarmConfig pressConfig;
+    pressConfig.highLimit = 1.2;
+    pressConfig.lowLimit  = 0.9;
+    m_alarmChecker->setPressConfig(pressConfig);
+
     setupUI();
 
     connect(m_mockGenerator, &MockDataGenerator::dataGenerated,
             this, &MainWindow::onDataGenerated);
+    connect(m_mockGenerator, &MockDataGenerator::dataGenerated,
+            m_alarmChecker, &AlarmChecker::checkData);
+    connect(m_alarmChecker, &AlarmChecker::alarmTriggered,
+            this, &MainWindow::onAlarmTriggered);
+    connect(m_alarmChecker, &AlarmChecker::alarmCleared,
+            this, &MainWindow::onAlarmCleared);
 }
 
 MainWindow::~MainWindow() {}
@@ -54,6 +72,13 @@ void MainWindow::setupUI()
     m_chartWidget->setMinimumHeight(300);
     mainLayout->addWidget(m_chartWidget);
 
+    // 报警列表
+    QLabel* alarmTitle = new QLabel("📋 报警记录", this);
+    m_alarmList = new QListWidget(this);
+    m_alarmList->setMaximumHeight(120);
+    mainLayout->addWidget(alarmTitle);
+    mainLayout->addWidget(m_alarmList);
+
     mainLayout->addStretch();
     mainLayout->addWidget(m_startStopBtn);
 }
@@ -91,4 +116,22 @@ void MainWindow::onStartStopClicked()
         m_mockGenerator->start(100);
         m_startStopBtn->setText("⏹ 停止采集");
     }
+}
+
+void MainWindow::onAlarmTriggered(const AlarmEvent& event)
+{
+    QString item = QString("[%1] ⚠ %2")
+                       .arg(event.timestamp.toString("hh:mm:ss"))
+                       .arg(event.message);
+    m_alarmList->insertItem(0, item);
+    m_alarmList->item(0)->setForeground(Qt::red);
+}
+
+void MainWindow::onAlarmCleared(const QString& channel)
+{
+    QString item = QString("[%1] ✓ %2 恢复正常")
+                       .arg(QDateTime::currentDateTime().toString("hh:mm:ss"))
+                       .arg(channel);
+    m_alarmList->insertItem(0, item);
+    m_alarmList->item(0)->setForeground(Qt::darkGreen);
 }

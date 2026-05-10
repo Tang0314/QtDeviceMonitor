@@ -21,6 +21,8 @@ set(SOURCES
     src/data/DeviceData.h
     src/mock/MockDataGenerator.cpp
     src/mock/MockDataGenerator.h
+    src/alarm/AlarmChecker.cpp
+    src/alarm/AlarmChecker.h
 )
 
 qt_add_executable(QtDeviceMonitor ${SOURCES}
@@ -28,7 +30,9 @@ qt_add_executable(QtDeviceMonitor ${SOURCES}
     src/mock/MockDataGenerator.h
     src/mock/MockDataGenerator.cpp
     src/ui/ChartWidget.h
-    src/ui/ChartWidget.cpp)
+    src/ui/ChartWidget.cpp
+    src/alarm/AlarmChecker.h
+    src/alarm/AlarmChecker.cpp)
 
 target_include_directories(QtDeviceMonitor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
