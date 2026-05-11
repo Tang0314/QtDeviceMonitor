@@ -49,8 +49,15 @@ void HistoryDialog::setupUI()
 
     // ── 数据表格 ──
     m_table = new QTableWidget(this);
-    m_table->setColumnCount(4);
-    m_table->setHorizontalHeaderLabels({"时间", "温度(℃)", "压力(MPa)", "状态"});
+    m_table->setColumnCount(7);
+    m_table->setHorizontalHeaderLabels({
+        "时间", "温度(℃)", "湿度(%)", "压力(MPa)", "CO₂(ppm)", "门状态", "状态"
+    });
+    m_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_table->setAlternatingRowColors(true);
+    m_table->setSortingEnabled(true);
+
     m_table->horizontalHeader()->setSectionResizeMode(
         QHeaderView::Stretch);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -90,8 +97,19 @@ void HistoryDialog::onQuery()
         m_table->setItem(row, 1, new QTableWidgetItem(
                                      QString::number(data.temperature, 'f', 1)));
         m_table->setItem(row, 2, new QTableWidgetItem(
-                                     QString::number(data.pressure, 'f', 2)));
+                                     QString::number(data.humidity, 'f', 1)));
+        m_table->setItem(row, 3, new QTableWidgetItem(
+                                     QString::number(data.pressure, 'f', 4)));
+        m_table->setItem(row, 4, new QTableWidgetItem(
+                                     QString::number(data.co2, 'f', 0)));
 
+        // 门状态
+        QTableWidgetItem* doorItem = new QTableWidgetItem(
+            data.doorOpen ? "⚠ 开启" : "✓ 关闭");
+        doorItem->setForeground(data.doorOpen ? QColor("orange") : Qt::darkGreen);
+        m_table->setItem(row, 5, doorItem);
+
+        // 状态
         QTableWidgetItem* statusItem = new QTableWidgetItem(data.statusCode);
         if (data.statusCode == "ALARM") {
             statusItem->setForeground(Qt::red);
@@ -100,7 +118,7 @@ void HistoryDialog::onQuery()
         } else {
             statusItem->setForeground(Qt::darkGreen);
         }
-        m_table->setItem(row, 3, statusItem);
+        m_table->setItem(row, 6, statusItem);
     }
 
     m_countLabel->setText(QString("共 %1 条记录").arg(dataList.size()));
