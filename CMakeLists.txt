@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.21)
-
 project(QtDeviceMonitor VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -33,26 +32,11 @@ set(SOURCES
     src/comm/TcpComm.h
     src/alarm/AlarmChecker.cpp
     src/alarm/AlarmChecker.h
+    src/config/ConfigManager.cpp
+    src/config/ConfigManager.h
 )
 
-qt_add_executable(QtDeviceMonitor ${SOURCES}
-    src/data/DeviceData.h
-    src/mock/MockDataGenerator.h
-    src/mock/MockDataGenerator.cpp
-    src/ui/ChartWidget.h
-    src/ui/ChartWidget.cpp
-    src/alarm/AlarmChecker.h
-    src/alarm/AlarmChecker.cpp
-    src/data/DatabaseManager.h
-    src/data/DatabaseManager.cpp
-    src/ui/SettingsDialog.h
-    src/ui/SettingsDialog.cpp
-    src/ui/HistoryDialog.h
-    src/ui/HistoryDialog.cpp
-    src/comm/TcpComm.h
-    src/comm/TcpComm.cpp
-    src/mock/VirtualTcpDevice.h
-    src/mock/VirtualTcpDevice.cpp)
+qt_add_executable(QtDeviceMonitor ${SOURCES})
 
 target_include_directories(QtDeviceMonitor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
