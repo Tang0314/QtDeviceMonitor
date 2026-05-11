@@ -1,7 +1,10 @@
 #include "config/ConfigManager.h"
+#include <QCoreApplication>
 
 ConfigManager::ConfigManager()
-    : m_settings("Tang0314", "QtDeviceMonitor")
+    : m_settings(
+        QCoreApplication::applicationDirPath() + "/userdata/config.ini",
+        QSettings::IniFormat)
 {}
 
 void ConfigManager::saveConfig(const QString& group, const AlarmConfig& config)
