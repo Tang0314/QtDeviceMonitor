@@ -35,14 +35,17 @@ private:
     void setupUI();
     void connectSignals();
 
-    // UI
+    // UI 控件
     QLabel*      m_tempLabel;
+    QLabel*      m_humLabel;       // 湿度
     QLabel*      m_pressLabel;
+    QLabel*      m_co2Label;       // CO₂
+    QLabel*      m_doorLabel;      // 门状态
     QLabel*      m_statusLabel;
     QLabel*      m_timeLabel;
-    QLabel*      m_connLabel;      // 连接状态标签
+    QLabel*      m_connLabel;
     QPushButton* m_startStopBtn;
-    QPushButton* m_tcpConnBtn;     // TCP连接按钮
+    QPushButton* m_tcpConnBtn;
     ChartWidget* m_chartWidget;
     QListWidget* m_alarmList;
 

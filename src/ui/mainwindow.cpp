@@ -131,21 +131,35 @@ void MainWindow::setupUI()
     QVBoxLayout* mainLayout = new QVBoxLayout(central);
 
     // 数据显示区
-    QFont dataFont("Arial", 16, QFont::Bold);
+    QFont dataFont("Arial", 14, QFont::Bold);
+    QFont normalFont("Arial", 11);
 
-    m_tempLabel   = new QLabel("温度: -- ℃", this);
-    m_pressLabel  = new QLabel("压力: -- MPa", this);
-    m_statusLabel = new QLabel("状态: --", this);
-    m_timeLabel   = new QLabel("时间: --", this);
+    m_tempLabel   = new QLabel("🌡 温度: -- ℃",    this);
+    m_humLabel    = new QLabel("💧 湿度: -- %",     this);
+    m_pressLabel  = new QLabel("🔵 压力: -- MPa",   this);
+    m_co2Label    = new QLabel("🌿 CO₂: -- ppm",   this);
+    m_doorLabel   = new QLabel("🚪 门状态: --",     this);
+    m_statusLabel = new QLabel("状态: --",          this);
+    m_timeLabel   = new QLabel("时间: --",          this);
 
     m_tempLabel->setFont(dataFont);
+    m_humLabel->setFont(dataFont);
     m_pressLabel->setFont(dataFont);
+    m_co2Label->setFont(dataFont);
+    m_doorLabel->setFont(dataFont);
     m_statusLabel->setFont(dataFont);
+    m_timeLabel->setFont(normalFont);
 
-    mainLayout->addWidget(m_tempLabel);
-    mainLayout->addWidget(m_pressLabel);
-    mainLayout->addWidget(m_statusLabel);
-    mainLayout->addWidget(m_timeLabel);
+    // 两列布局显示数据
+    QGridLayout* dataGrid = new QGridLayout();
+    dataGrid->addWidget(m_tempLabel,   0, 0);
+    dataGrid->addWidget(m_humLabel,    0, 1);
+    dataGrid->addWidget(m_pressLabel,  1, 0);
+    dataGrid->addWidget(m_co2Label,    1, 1);
+    dataGrid->addWidget(m_doorLabel,   2, 0);
+    dataGrid->addWidget(m_statusLabel, 2, 1);
+    dataGrid->addWidget(m_timeLabel,   3, 0, 1, 2);
+    mainLayout->addLayout(dataGrid);
 
     // TCP 连接控制
     m_connLabel  = new QLabel("● 未连接", this);
@@ -184,9 +198,23 @@ void MainWindow::setupUI()
 void MainWindow::onDataGenerated(const DeviceData& data)
 {
     m_tempLabel->setText(
-        QString("温度: %1 ℃").arg(data.temperature, 0, 'f', 1));
+        QString("🌡 温度: %1 ℃").arg(data.temperature, 0, 'f', 1));
+    m_humLabel->setText(
+        QString("💧 湿度: %1 %").arg(data.humidity, 0, 'f', 1));
     m_pressLabel->setText(
-        QString("压力: %1 MPa").arg(data.pressure, 0, 'f', 2));
+        QString("🔵 压力: %1 MPa").arg(data.pressure, 0, 'f', 4));
+    m_co2Label->setText(
+        QString("🌿 CO₂: %1 ppm").arg(data.co2, 0, 'f', 0));
+
+    // 门状态
+    if (data.doorOpen) {
+        m_doorLabel->setText("🚪 门状态: ⚠ 开启");
+        m_doorLabel->setStyleSheet("color: orange;");
+    } else {
+        m_doorLabel->setText("🚪 门状态: ✓ 关闭");
+        m_doorLabel->setStyleSheet("color: green;");
+    }
+
     m_timeLabel->setText(
         QString("时间: %1").arg(data.timestamp.toString("hh:mm:ss")));
 

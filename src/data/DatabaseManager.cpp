@@ -12,20 +12,22 @@ DatabaseManager::DatabaseManager(QObject* parent)
 
 DatabaseManager::~DatabaseManager()
 {
-    // 剩余缓冲数据写入
     if (!m_buffer.isEmpty() && m_db.isOpen()) {
         QSqlQuery query(m_db);
         m_db.transaction();
-        for (const auto& data : m_buffer) {
+        for (const auto& d : m_buffer) {
             query.prepare(
                 "INSERT INTO device_data "
-                "(timestamp, temperature, pressure, status_code) "
-                "VALUES (?, ?, ?, ?)"
+                "(timestamp, temperature, humidity, pressure, co2, door_open, status_code) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)"
                 );
-            query.addBindValue(data.timestamp.toMSecsSinceEpoch());
-            query.addBindValue(data.temperature);
-            query.addBindValue(data.pressure);
-            query.addBindValue(data.statusCode);
+            query.addBindValue(d.timestamp.toMSecsSinceEpoch());
+            query.addBindValue(d.temperature);
+            query.addBindValue(d.humidity);
+            query.addBindValue(d.pressure);
+            query.addBindValue(d.co2);
+            query.addBindValue(d.doorOpen ? 1 : 0);
+            query.addBindValue(d.statusCode);
             query.exec();
         }
         m_db.commit();
@@ -58,7 +60,10 @@ bool DatabaseManager::createTables()
         "id          INTEGER PRIMARY KEY AUTOINCREMENT,"
         "timestamp   INTEGER NOT NULL,"
         "temperature REAL    NOT NULL,"
+        "humidity    REAL    NOT NULL DEFAULT 0,"
         "pressure    REAL    NOT NULL,"
+        "co2         REAL    NOT NULL DEFAULT 0,"
+        "door_open   INTEGER NOT NULL DEFAULT 0,"
         "status_code TEXT    NOT NULL DEFAULT 'OK'"
         ")"
         );
@@ -101,12 +106,15 @@ void DatabaseManager::saveData(const DeviceData& data)
         for (const auto& d : m_buffer) {
             query.prepare(
                 "INSERT INTO device_data "
-                "(timestamp, temperature, pressure, status_code) "
-                "VALUES (?, ?, ?, ?)"
+                "(timestamp, temperature, humidity, pressure, co2, door_open, status_code) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)"
                 );
             query.addBindValue(d.timestamp.toMSecsSinceEpoch());
             query.addBindValue(d.temperature);
+            query.addBindValue(d.humidity);
             query.addBindValue(d.pressure);
+            query.addBindValue(d.co2);
+            query.addBindValue(d.doorOpen ? 1 : 0);
             query.addBindValue(d.statusCode);
             query.exec();
         }
@@ -143,7 +151,7 @@ QList<DeviceData> DatabaseManager::queryByTimeRange(
 
     QSqlQuery query(m_db);
     query.prepare(
-        "SELECT timestamp, temperature, pressure, status_code "
+        "SELECT timestamp, temperature, humidity, pressure, co2, door_open, status_code "
         "FROM device_data "
         "WHERE timestamp BETWEEN ? AND ? "
         "ORDER BY timestamp ASC"
@@ -156,8 +164,11 @@ QList<DeviceData> DatabaseManager::queryByTimeRange(
         DeviceData data;
         data.timestamp   = QDateTime::fromMSecsSinceEpoch(query.value(0).toLongLong());
         data.temperature = query.value(1).toDouble();
-        data.pressure    = query.value(2).toDouble();
-        data.statusCode  = query.value(3).toString();
+        data.humidity    = query.value(2).toDouble();
+        data.pressure    = query.value(3).toDouble();
+        data.co2         = query.value(4).toDouble();
+        data.doorOpen    = query.value(5).toInt() == 1;
+        data.statusCode  = query.value(6).toString();
         data.isValid     = true;
         result.append(data);
     }
@@ -178,12 +189,15 @@ bool DatabaseManager::exportToCsv(
 
     QTextStream out(&file);
     out.setEncoding(QStringConverter::Utf8);
-    out << "\xEF\xBB\xBF";  // UTF-8 BOM，让 Excel 正确识别
-    out << "时间,温度(℃),压力(MPa),状态\n";
+    out << "\xEF\xBB\xBF";
+    out << "时间,温度(℃),湿度(%),压力(MPa),CO2(ppm),门状态,状态\n";
     for (const auto& data : dataList) {
         out << data.timestamp.toString("yyyy-MM-dd hh:mm:ss") << ","
             << QString::number(data.temperature, 'f', 1) << ","
-            << QString::number(data.pressure, 'f', 2) << ","
+            << QString::number(data.humidity,    'f', 1) << ","
+            << QString::number(data.pressure,    'f', 4) << ","
+            << QString::number(data.co2,         'f', 0) << ","
+            << (data.doorOpen ? "开" : "关") << ","
             << data.statusCode << "\n";
     }
     return true;
