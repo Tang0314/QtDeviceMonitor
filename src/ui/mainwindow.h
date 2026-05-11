@@ -12,6 +12,7 @@
 #include "data/DatabaseManager.h"
 #include "ui/SettingsDialog.h"
 #include "ui/HistoryDialog.h"
+#include "config/ConfigManager.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -60,6 +61,8 @@ private:
     AlarmConfig m_humConfig;
     AlarmConfig m_pressConfig;
     AlarmConfig m_co2Config;
+
+    ConfigManager m_configManager;
 
     bool m_useTcp = false;  // 当前使用TCP还是Mock
 };

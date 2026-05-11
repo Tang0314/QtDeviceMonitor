@@ -19,21 +19,15 @@ MainWindow::MainWindow(QWidget* parent)
     , m_virtualDevice(new VirtualTcpDevice(this))
     , m_tcpComm(new TcpComm(this))
 {
-    // 配置报警阈值
-    m_tempConfig.highLimit  = -15.0;
-    m_tempConfig.lowLimit   = -23.0;
+    // 从配置文件读取报警阈值
+    m_tempConfig  = m_configManager.loadTempConfig();
+    m_humConfig   = m_configManager.loadHumConfig();
+    m_pressConfig = m_configManager.loadPressConfig();
+    m_co2Config   = m_configManager.loadCo2Config();
+
     m_alarmChecker->setTempConfig(m_tempConfig);
-
-    m_humConfig.highLimit   = 95.0;
-    m_humConfig.lowLimit    = 60.0;
     m_alarmChecker->setHumConfig(m_humConfig);
-
-    m_pressConfig.highLimit = 0.1060;
-    m_pressConfig.lowLimit  = 0.0966;
     m_alarmChecker->setPressConfig(m_pressConfig);
-
-    m_co2Config.highLimit   = 1000.0;
-    m_co2Config.lowLimit    = 0.0;
     m_alarmChecker->setCo2Config(m_co2Config);
 
     setupUI();
@@ -308,6 +302,12 @@ void MainWindow::onSettings()
         m_alarmChecker->setHumConfig(m_humConfig);
         m_alarmChecker->setPressConfig(m_pressConfig);
         m_alarmChecker->setCo2Config(m_co2Config);
+
+        // 保存到配置文件
+        m_configManager.saveTempConfig(m_tempConfig);
+        m_configManager.saveHumConfig(m_humConfig);
+        m_configManager.savePressConfig(m_pressConfig);
+        m_configManager.saveCo2Config(m_co2Config);
     }
 }
 
