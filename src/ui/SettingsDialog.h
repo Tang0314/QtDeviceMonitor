@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QCheckBox>
 #include "alarm/AlarmChecker.h"
+#include <QGroupBox>
 
 class SettingsDialog : public QDialog {
     Q_OBJECT
@@ -12,30 +13,52 @@ class SettingsDialog : public QDialog {
 public:
     explicit SettingsDialog(QWidget* parent = nullptr);
 
-    // 获取用户设置的配置
-    AlarmConfig getTempConfig() const;
+    AlarmConfig getTempConfig()  const;
+    AlarmConfig getHumConfig()   const;
     AlarmConfig getPressConfig() const;
+    AlarmConfig getCo2Config()   const;
 
-    // 设置初始值
     void setTempConfig(const AlarmConfig& config);
+    void setHumConfig(const AlarmConfig& config);
     void setPressConfig(const AlarmConfig& config);
+    void setCo2Config(const AlarmConfig& config);
 
 private slots:
     void onConfirm();
 
 private:
     void setupUI();
+    QGroupBox* createChannelGroup(
+        const QString& title,
+        QDoubleSpinBox*& highSpin,
+        QDoubleSpinBox*& lowSpin,
+        QCheckBox*& enabledCheck,
+        double highVal, double lowVal,
+        double min, double max,
+        double step, int decimals,
+        const QString& suffix
+        );
 
-    // 温度报警设置
+    // 温度
     QDoubleSpinBox* m_tempHighSpin;
     QDoubleSpinBox* m_tempLowSpin;
     QCheckBox*      m_tempEnabledCheck;
 
-    // 压力报警设置
+    // 湿度
+    QDoubleSpinBox* m_humHighSpin;
+    QDoubleSpinBox* m_humLowSpin;
+    QCheckBox*      m_humEnabledCheck;
+
+    // 压力
     QDoubleSpinBox* m_pressHighSpin;
     QDoubleSpinBox* m_pressLowSpin;
     QCheckBox*      m_pressEnabledCheck;
 
-    QPushButton*    m_confirmBtn;
-    QPushButton*    m_cancelBtn;
+    // CO₂
+    QDoubleSpinBox* m_co2HighSpin;
+    QDoubleSpinBox* m_co2LowSpin;
+    QCheckBox*      m_co2EnabledCheck;
+
+    QPushButton* m_confirmBtn;
+    QPushButton* m_cancelBtn;
 };

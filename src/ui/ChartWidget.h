@@ -14,19 +14,20 @@ public:
     explicit ChartWidget(QWidget* parent = nullptr);
 
 public slots:
-    void addData(const DeviceData& data);  // 接收新数据点
-    void clear();                           // 清空曲线
+    void addData(const DeviceData& data);
+    void clear();
 
 private:
     void setupChart();
 
     QChartView*    m_chartView;
-    QLineSeries*   m_tempSeries;    // 温度曲线
-    QLineSeries*   m_pressSeries;   // 压力曲线
-    QDateTimeAxis* m_axisX;         // 时间轴
-    QValueAxis*    m_axisTempY;     // 温度Y轴
-    QValueAxis*    m_axisPressY;    // 压力Y轴（右侧）
+    QLineSeries*   m_tempSeries;    // 温度
+    QLineSeries*   m_humSeries;     // 湿度
+    QLineSeries*   m_co2Series;     // CO₂
+    QDateTimeAxis* m_axisX;
+    QValueAxis*    m_axisTempY;     // 温度Y轴（左）
+    QValueAxis*    m_axisHumY;      // 湿度Y轴（右上）
+    QValueAxis*    m_axisCo2Y;      // CO₂Y轴（右）
 
-
-    static const int MAX_POINTS = 300;  // 最多显示300个点（30秒@100ms）
+    static const int MAX_POINTS = 300;
 };
