@@ -20,13 +20,21 @@ MainWindow::MainWindow(QWidget* parent)
     , m_tcpComm(new TcpComm(this))
 {
     // 配置报警阈值
-    m_tempConfig.highLimit = 28.0;
-    m_tempConfig.lowLimit  = 15.0;
+    m_tempConfig.highLimit  = -15.0;
+    m_tempConfig.lowLimit   = -23.0;
     m_alarmChecker->setTempConfig(m_tempConfig);
 
-    m_pressConfig.highLimit = 1.1;
-    m_pressConfig.lowLimit  = 0.98;
+    m_humConfig.highLimit   = 95.0;
+    m_humConfig.lowLimit    = 60.0;
+    m_alarmChecker->setHumConfig(m_humConfig);
+
+    m_pressConfig.highLimit = 0.1060;
+    m_pressConfig.lowLimit  = 0.0966;
     m_alarmChecker->setPressConfig(m_pressConfig);
+
+    m_co2Config.highLimit   = 1000.0;
+    m_co2Config.lowLimit    = 0.0;
+    m_alarmChecker->setCo2Config(m_co2Config);
 
     setupUI();
 
@@ -286,13 +294,20 @@ void MainWindow::onSettings()
 {
     SettingsDialog dlg(this);
     dlg.setTempConfig(m_tempConfig);
+    dlg.setHumConfig(m_humConfig);
     dlg.setPressConfig(m_pressConfig);
+    dlg.setCo2Config(m_co2Config);
 
     if (dlg.exec() == QDialog::Accepted) {
         m_tempConfig  = dlg.getTempConfig();
+        m_humConfig   = dlg.getHumConfig();
         m_pressConfig = dlg.getPressConfig();
+        m_co2Config   = dlg.getCo2Config();
+
         m_alarmChecker->setTempConfig(m_tempConfig);
+        m_alarmChecker->setHumConfig(m_humConfig);
         m_alarmChecker->setPressConfig(m_pressConfig);
+        m_alarmChecker->setCo2Config(m_co2Config);
     }
 }
 

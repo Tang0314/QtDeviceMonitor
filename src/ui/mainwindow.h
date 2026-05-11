@@ -57,7 +57,9 @@ private:
     DatabaseManager*   m_dbManager;
 
     AlarmConfig m_tempConfig;
+    AlarmConfig m_humConfig;
     AlarmConfig m_pressConfig;
+    AlarmConfig m_co2Config;
 
     bool m_useTcp = false;  // 当前使用TCP还是Mock
 };
