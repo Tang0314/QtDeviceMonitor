@@ -99,6 +99,9 @@ CSV 文本帧格式（每帧以 `\r\n` 结尾）：
 
 ## 项目结构
 
+### 项目结构
+
+```text
 QtDeviceMonitor/
 ├── src/
 │   ├── ui/      # 界面模块（MainWindow/ChartWidget/SettingsDialog等）
@@ -112,6 +115,7 @@ QtDeviceMonitor/
 │   └── virtual_serial_device.py
 ├── resources/
 └── CMakeLists.txt
+```
 
 ## 开源协议
 
