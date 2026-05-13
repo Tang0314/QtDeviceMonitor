@@ -18,6 +18,7 @@ MainWindow::MainWindow(QWidget* parent)
     , m_dbManager(new DatabaseManager(this))
     , m_virtualDevice(new VirtualTcpDevice(this))
     , m_tcpComm(new TcpComm(this))
+    , m_serialComm(new SerialComm(this))
 {
     // 从配置文件读取报警阈值
     m_tempConfig  = m_configManager.loadTempConfig();
@@ -81,6 +82,18 @@ MainWindow::MainWindow(QWidget* parent)
             m_dbManager, &DatabaseManager::saveData);
     connect(m_alarmChecker, &AlarmChecker::alarmTriggered,
             m_dbManager, &DatabaseManager::saveAlarm);
+
+    // 串口通信
+    connect(m_serialConnBtn, &QPushButton::clicked,
+            this, &MainWindow::onSerialConnect);
+    connect(m_serialComm, &SerialComm::dataReceived,
+            this, &MainWindow::onDataGenerated);
+    connect(m_serialComm, &SerialComm::dataReceived,
+            m_alarmChecker, &AlarmChecker::checkData);
+    connect(m_serialComm, &SerialComm::dataReceived,
+            m_dbManager, &DatabaseManager::saveData);
+    connect(m_serialComm, &SerialComm::connectionStateChanged,
+            this, &MainWindow::onSerialStateChanged);
 }
 MainWindow::~MainWindow() {}
 
@@ -174,6 +187,11 @@ void MainWindow::setupUI()
     connLayout->addStretch();
     connLayout->addWidget(m_tcpConnBtn);
     mainLayout->addLayout(connLayout);
+
+    // 串口连接控制
+    m_serialConnBtn = new QPushButton("连接串口", this);
+    m_serialConnBtn->setFixedHeight(35);
+    connLayout->addWidget(m_serialConnBtn);
 
     // 启动/停止按钮
     m_startStopBtn = new QPushButton("▶ 开始采集", this);
@@ -332,4 +350,35 @@ void MainWindow::onTcpError(const QString& msg)
 {
     m_connLabel->setText("● 错误: " + msg);
     m_connLabel->setStyleSheet("color: red;");
+}
+
+void MainWindow::onSerialConnect()
+{
+    if (m_serialComm->isOpen()) {
+        m_serialComm->close();
+        m_serialConnBtn->setText("连接串口");
+        return;
+    }
+
+    SerialConfigDialog dlg(this);
+    if (dlg.exec() == QDialog::Accepted) {
+        SerialConfig config = dlg.getConfig();
+        if (m_serialComm->open(config)) {
+            m_serialConnBtn->setText("断开串口");
+            m_mockGenerator->stop();
+            m_startStopBtn->setText("▶ 开始采集");
+        }
+    }
+}
+
+void MainWindow::onSerialStateChanged(bool connected)
+{
+    if (connected) {
+        m_connLabel->setText("● 已连接串口");
+        m_connLabel->setStyleSheet("color: green;");
+    } else {
+        m_serialConnBtn->setText("连接串口");
+        m_connLabel->setText("● 未连接");
+        m_connLabel->setStyleSheet("color: gray;");
+    }
 }

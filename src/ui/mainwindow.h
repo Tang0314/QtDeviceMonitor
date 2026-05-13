@@ -13,6 +13,8 @@
 #include "ui/SettingsDialog.h"
 #include "ui/HistoryDialog.h"
 #include "config/ConfigManager.h"
+#include "comm/SerialComm.h"
+#include "ui/SerialConfigDialog.h"
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -31,6 +33,8 @@ private slots:
     void onHistory();
     void onTcpStateChanged(bool connected);
     void onTcpError(const QString& msg);
+    void onSerialConnect();
+    void onSerialStateChanged(bool connected);
 
 private:
     void setupUI();
@@ -65,4 +69,7 @@ private:
     ConfigManager m_configManager;
 
     bool m_useTcp = false;  // 当前使用TCP还是Mock
+
+    SerialComm* m_serialComm;
+    QPushButton* m_serialConnBtn;   // 串口连接按钮
 };
