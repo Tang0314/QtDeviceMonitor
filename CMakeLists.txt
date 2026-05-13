@@ -21,6 +21,8 @@ set(SOURCES
     src/ui/SettingsDialog.h
     src/ui/HistoryDialog.cpp
     src/ui/HistoryDialog.h
+    src/ui/SerialConfigDialog.cpp
+    src/ui/SerialConfigDialog.h
     src/data/DeviceData.h
     src/data/DatabaseManager.cpp
     src/data/DatabaseManager.h
@@ -30,13 +32,19 @@ set(SOURCES
     src/mock/VirtualTcpDevice.h
     src/comm/TcpComm.cpp
     src/comm/TcpComm.h
+    src/comm/SerialComm.cpp
+    src/comm/SerialComm.h
     src/alarm/AlarmChecker.cpp
     src/alarm/AlarmChecker.h
     src/config/ConfigManager.cpp
     src/config/ConfigManager.h
 )
 
-qt_add_executable(QtDeviceMonitor ${SOURCES})
+qt_add_executable(QtDeviceMonitor ${SOURCES}
+    src/comm/SerialComm.h
+    src/comm/SerialComm.cpp
+    src/ui/SerialConfigDialog.h
+    src/ui/SerialConfigDialog.cpp)
 
 target_include_directories(QtDeviceMonitor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
