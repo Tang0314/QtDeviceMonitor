@@ -85,3 +85,38 @@ py docs/virtual_serial_device.py
 ## 数据协议
 
 CSV 文本帧格式（每帧以 `\r\n` 结尾）：
+
+温度,湿度,压力,CO₂,门状态,状态码 -17.0,85.3,0.1012,856,0,OK
+
+| 字段   | 类型   | 单位 | 说明                  |
+| ------ | ------ | ---- | --------------------- |
+| 温度   | float  | ℃    | 冷库温度，范围 -30~10 |
+| 湿度   | float  | %    | 相对湿度，范围 0~100  |
+| 压力   | float  | MPa  | 气压，范围 0.08~0.12  |
+| CO₂    | float  | ppm  | 二氧化碳浓度          |
+| 门状态 | int    | -    | 0=关闭，1=开启        |
+| 状态码 | string | -    | OK/WARN/ALARM/ERROR   |
+
+## 项目结构
+
+QtDeviceMonitor/
+├── src/
+│   ├── ui/      # 界面模块（MainWindow/ChartWidget/SettingsDialog等）
+│   ├── comm/    # 通信模块（TcpComm/SerialComm）
+│   ├── data/    # 数据模块（DeviceData/DatabaseManager）
+│   ├── alarm/   # 报警模块（AlarmChecker）
+│   ├── mock/    # 虚拟设备（MockDataGenerator/VirtualTcpDevice）
+│   └── config/  # 配置模块（ConfigManager）
+├── docs/
+│   ├── CHANGELOG.md
+│   └── virtual_serial_device.py
+├── resources/
+└── CMakeLists.txt
+
+## 开源协议
+
+[MIT License](LICENSE)
+
+## 作者
+
+[@Tang0314](https://github.com/Tang0314)
