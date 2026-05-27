@@ -40,11 +40,7 @@ set(SOURCES
     src/config/ConfigManager.h
 )
 
-qt_add_executable(QtDeviceMonitor ${SOURCES}
-    src/comm/SerialComm.h
-    src/comm/SerialComm.cpp
-    src/ui/SerialConfigDialog.h
-    src/ui/SerialConfigDialog.cpp)
+qt_add_executable(QtDeviceMonitor ${SOURCES})
 
 target_include_directories(QtDeviceMonitor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src

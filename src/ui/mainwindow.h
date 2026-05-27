@@ -16,6 +16,13 @@
 #include "comm/SerialComm.h"
 #include "ui/SerialConfigDialog.h"
 
+enum class DataSource {
+    None,
+    Mock,
+    TCP,
+    Serial
+};
+
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
@@ -39,6 +46,9 @@ private slots:
 private:
     void setupUI();
     void connectSignals();
+
+    // 数据源状态机：确保 Mock/TCP/Serial 互斥
+    void setDataSource(DataSource source);
 
     // UI 控件
     QLabel*      m_tempLabel;
@@ -68,7 +78,7 @@ private:
 
     ConfigManager m_configManager;
 
-    bool m_useTcp = false;  // 当前使用TCP还是Mock
+    DataSource m_dataSource = DataSource::None;
 
     SerialComm* m_serialComm;
     QPushButton* m_serialConnBtn;   // 串口连接按钮

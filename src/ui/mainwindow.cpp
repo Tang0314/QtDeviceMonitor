@@ -42,22 +42,12 @@ MainWindow::MainWindow(QWidget* parent)
     connect(m_alarmChecker, &AlarmChecker::alarmCleared,
             this, &MainWindow::onAlarmCleared);
 
-    // TCP 通信
+    // TCP 通信 — 通过状态机切换
     connect(m_tcpConnBtn, &QPushButton::clicked, this, [this]() {
-        if (!m_useTcp) {
-            // 启动虚拟设备
-            m_virtualDevice->start(8888);
-            // 连接
-            m_tcpComm->connectToDevice("127.0.0.1", 8888);
-            m_mockGenerator->stop();
-            m_startStopBtn->setText("▶ 开始采集");
-            m_useTcp = true;
-            m_tcpConnBtn->setText("断开TCP");
+        if (m_dataSource == DataSource::TCP) {
+            setDataSource(DataSource::None);
         } else {
-            m_tcpComm->disconnectFromDevice();
-            m_virtualDevice->stop();
-            m_useTcp = false;
-            m_tcpConnBtn->setText("连接虚拟设备(TCP)");
+            setDataSource(DataSource::TCP);
         }
     });
 
@@ -96,6 +86,80 @@ MainWindow::MainWindow(QWidget* parent)
             this, &MainWindow::onSerialStateChanged);
 }
 MainWindow::~MainWindow() {}
+
+// ── 数据源状态机 ──
+// 核心原则：先置 m_dataSource = None（中间态）再停止旧数据源，
+// 这样停止过程中触发的信号处理程序检测到 m_dataSource 已变化，不会误改 UI。
+
+void MainWindow::setDataSource(DataSource source)
+{
+    if (m_dataSource == source) return;
+
+    // 1. 先进入 None 中间态，抑制 stop 过程中的信号副作用
+    DataSource oldSource = m_dataSource;
+    m_dataSource = DataSource::None;
+
+    // 2. 停止旧数据源（此时 m_dataSource == None，信号处理程序会提前 return）
+    switch (oldSource) {
+    case DataSource::Mock:
+        m_mockGenerator->stop();
+        break;
+    case DataSource::TCP:
+        m_tcpComm->disconnectFromDevice();
+        m_virtualDevice->stop();
+        break;
+    case DataSource::Serial:
+        m_serialComm->close();
+        break;
+    case DataSource::None:
+        break;
+    }
+
+    // 3. 切换到新数据源
+    m_dataSource = source;
+
+    // 4. 启动新数据源 + 统一更新全部 UI 控件
+    switch (source) {
+    case DataSource::None:
+        m_startStopBtn->setText("▶ 开始采集");
+        m_tcpConnBtn->setText("连接虚拟设备(TCP)");
+        m_serialConnBtn->setText("连接串口");
+        m_connLabel->setText("● 未连接");
+        m_connLabel->setStyleSheet("color: gray;");
+        break;
+
+    case DataSource::Mock:
+        m_mockGenerator->start(100);
+        m_startStopBtn->setText("⏹ 停止采集");
+        m_tcpConnBtn->setText("连接虚拟设备(TCP)");
+        m_serialConnBtn->setText("连接串口");
+        m_connLabel->setText("● Mock 模式");
+        m_connLabel->setStyleSheet("color: blue;");
+        break;
+
+    case DataSource::TCP:
+        m_virtualDevice->start(8888);
+        m_tcpComm->connectToDevice("127.0.0.1", 8888);
+        m_startStopBtn->setText("▶ 开始采集");
+        m_tcpConnBtn->setText("断开TCP");
+        m_serialConnBtn->setText("连接串口");
+        m_connLabel->setText("● TCP 连接中...");
+        m_connLabel->setStyleSheet("color: orange;");
+        // 连接成功后 onTcpStateChanged(true) 会更新 connLabel 为绿色
+        break;
+
+    case DataSource::Serial:
+        // 注意：串口在 onSerialConnect() 中已经 open 成功，
+        // onSerialStateChanged(true) 已将 connLabel 设为"● 已连接串口"（绿色），
+        // 这里不再覆盖 connLabel
+        m_startStopBtn->setText("▶ 开始采集");
+        m_tcpConnBtn->setText("连接虚拟设备(TCP)");
+        m_serialConnBtn->setText("断开串口");
+        break;
+    }
+}
+
+// ── UI 构建 ──
 
 void MainWindow::setupUI()
 {
@@ -136,8 +200,8 @@ void MainWindow::setupUI()
     // 连接菜单信号
     connect(exportAction, &QAction::triggered, this, &MainWindow::onExportCsv);
     connect(exitAction,   &QAction::triggered, this, &QApplication::quit);
-    connect(startAction,  &QAction::triggered, [this]{ m_mockGenerator->start(100); });
-    connect(stopAction,   &QAction::triggered, [this]{ m_mockGenerator->stop(); });
+    connect(startAction,  &QAction::triggered, [this]{ setDataSource(DataSource::Mock); });
+    connect(stopAction,   &QAction::triggered, [this]{ setDataSource(DataSource::None); });
     setMinimumSize(400, 300);
 
     QWidget* central = new QWidget(this);
@@ -255,12 +319,10 @@ void MainWindow::onDataGenerated(const DeviceData& data)
 
 void MainWindow::onStartStopClicked()
 {
-    if (m_mockGenerator->isRunning()) {
-        m_mockGenerator->stop();
-        m_startStopBtn->setText("▶ 开始采集");
+    if (m_dataSource == DataSource::Mock) {
+        setDataSource(DataSource::None);
     } else {
-        m_mockGenerator->start(100);
-        m_startStopBtn->setText("⏹ 停止采集");
+        setDataSource(DataSource::Mock);
     }
 }
 
@@ -337,12 +399,15 @@ void MainWindow::onHistory()
 
 void MainWindow::onTcpStateChanged(bool connected)
 {
+    if (m_dataSource != DataSource::TCP) return; // 已切换到其他数据源，忽略
+
     if (connected) {
         m_connLabel->setText("● 已连接 TCP 127.0.0.1:8888");
         m_connLabel->setStyleSheet("color: green;");
     } else {
-        m_connLabel->setText("● 未连接");
-        m_connLabel->setStyleSheet("color: gray;");
+        // TCP 意外断开：自动重连中，更新标签提示
+        m_connLabel->setText("● TCP 断开，重连中...");
+        m_connLabel->setStyleSheet("color: orange;");
     }
 }
 
@@ -354,9 +419,8 @@ void MainWindow::onTcpError(const QString& msg)
 
 void MainWindow::onSerialConnect()
 {
-    if (m_serialComm->isOpen()) {
-        m_serialComm->close();
-        m_serialConnBtn->setText("连接串口");
+    if (m_dataSource == DataSource::Serial) {
+        setDataSource(DataSource::None);
         return;
     }
 
@@ -364,9 +428,7 @@ void MainWindow::onSerialConnect()
     if (dlg.exec() == QDialog::Accepted) {
         SerialConfig config = dlg.getConfig();
         if (m_serialComm->open(config)) {
-            m_serialConnBtn->setText("断开串口");
-            m_mockGenerator->stop();
-            m_startStopBtn->setText("▶ 开始采集");
+            setDataSource(DataSource::Serial);
         }
     }
 }
@@ -377,8 +439,11 @@ void MainWindow::onSerialStateChanged(bool connected)
         m_connLabel->setText("● 已连接串口");
         m_connLabel->setStyleSheet("color: green;");
     } else {
-        m_serialConnBtn->setText("连接串口");
-        m_connLabel->setText("● 未连接");
-        m_connLabel->setStyleSheet("color: gray;");
+        // 只有当前是串口模式才更新UI（避免切换数据源时的闪烁）
+        if (m_dataSource == DataSource::Serial) {
+            m_serialConnBtn->setText("连接串口");
+            m_connLabel->setText("● 串口已断开");
+            m_connLabel->setStyleSheet("color: gray;");
+        }
     }
 }
