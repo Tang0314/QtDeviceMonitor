@@ -1,4 +1,5 @@
 #include "ui/mainwindow.h"
+#include "ui/AlarmHistoryDialog.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QWidget>
@@ -10,6 +11,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QApplication>
+#include <QStatusBar>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -130,6 +132,8 @@ void MainWindow::setDataSource(DataSource source)
 
     case DataSource::Mock:
         m_mockGenerator->start(100);
+        m_recordCount = 0;
+        m_collectStartTime = QDateTime::currentDateTime();
         m_startStopBtn->setText("⏹ 停止采集");
         m_tcpConnBtn->setText("连接虚拟设备(TCP)");
         m_serialConnBtn->setText("连接串口");
@@ -140,6 +144,8 @@ void MainWindow::setDataSource(DataSource source)
     case DataSource::TCP:
         m_virtualDevice->start(8888);
         m_tcpComm->connectToDevice("127.0.0.1", 8888);
+        m_recordCount = 0;
+        m_collectStartTime = QDateTime::currentDateTime();
         m_startStopBtn->setText("▶ 开始采集");
         m_tcpConnBtn->setText("断开TCP");
         m_serialConnBtn->setText("连接串口");
@@ -149,14 +155,38 @@ void MainWindow::setDataSource(DataSource source)
         break;
 
     case DataSource::Serial:
-        // 注意：串口在 onSerialConnect() 中已经 open 成功，
-        // onSerialStateChanged(true) 已将 connLabel 设为"● 已连接串口"（绿色），
-        // 这里不再覆盖 connLabel
+        m_recordCount = 0;
+        m_collectStartTime = QDateTime::currentDateTime();
         m_startStopBtn->setText("▶ 开始采集");
         m_tcpConnBtn->setText("连接虚拟设备(TCP)");
         m_serialConnBtn->setText("断开串口");
         break;
     }
+
+    updateStatusBar();
+}
+
+void MainWindow::updateStatusBar()
+{
+    QString dsName;
+    switch (m_dataSource) {
+    case DataSource::Mock:   dsName = "Mock";   break;
+    case DataSource::TCP:    dsName = "TCP";    break;
+    case DataSource::Serial: dsName = "串口";   break;
+    case DataSource::None:   dsName = "空闲";   break;
+    }
+
+    QString msg = QString("数据源: %1 | 记录: %2")
+                      .arg(dsName)
+                      .arg(m_recordCount);
+
+    if (m_dataSource != DataSource::None && m_collectStartTime.isValid()) {
+        qint64 secs = m_collectStartTime.secsTo(QDateTime::currentDateTime());
+        msg += QString(" | 运行: %1")
+                   .arg(QDateTime::fromSecsSinceEpoch(secs).toUTC().toString("hh:mm:ss"));
+    }
+
+    statusBar()->showMessage(msg);
 }
 
 // ── UI 构建 ──
@@ -179,6 +209,10 @@ void MainWindow::setupUI()
     historyAction->setShortcut(QKeySequence("Ctrl+H"));
     fileMenu->addAction(historyAction);
     connect(historyAction, &QAction::triggered, this, &MainWindow::onHistory);
+
+    QAction* alarmHistoryAction = new QAction("报警历史(&L)", this);
+    fileMenu->addAction(alarmHistoryAction);
+    connect(alarmHistoryAction, &QAction::triggered, this, &MainWindow::onAlarmHistory);
 
     fileMenu->addSeparator();
 
@@ -315,6 +349,9 @@ void MainWindow::onDataGenerated(const DeviceData& data)
     }
 
     m_chartWidget->addData(data);
+
+    m_recordCount++;
+    updateStatusBar();
 }
 
 void MainWindow::onStartStopClicked()
@@ -394,6 +431,12 @@ void MainWindow::onSettings()
 void MainWindow::onHistory()
 {
     HistoryDialog dlg(m_dbManager, this);
+    dlg.exec();
+}
+
+void MainWindow::onAlarmHistory()
+{
+    AlarmHistoryDialog dlg(m_dbManager, this);
     dlg.exec();
 }
 

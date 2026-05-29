@@ -29,8 +29,6 @@ private slots:
     void onReconnectTimer();
 
 private:
-    DeviceData parseFrame(const QByteArray& frame);
-
     QTcpSocket* m_socket;
     QTimer*     m_reconnectTimer;
     QByteArray  m_buffer;          // 粘包处理缓冲区

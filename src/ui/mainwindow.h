@@ -38,6 +38,7 @@ private slots:
     void onExportCsv();
     void onSettings();
     void onHistory();
+    void onAlarmHistory();
     void onTcpStateChanged(bool connected);
     void onTcpError(const QString& msg);
     void onSerialConnect();
@@ -49,6 +50,7 @@ private:
 
     // 数据源状态机：确保 Mock/TCP/Serial 互斥
     void setDataSource(DataSource source);
+    void updateStatusBar();
 
     // UI 控件
     QLabel*      m_tempLabel;
@@ -79,6 +81,10 @@ private:
     ConfigManager m_configManager;
 
     DataSource m_dataSource = DataSource::None;
+
+    // 状态栏统计
+    int       m_recordCount = 0;
+    QDateTime m_collectStartTime;
 
     SerialComm* m_serialComm;
     QPushButton* m_serialConnBtn;   // 串口连接按钮

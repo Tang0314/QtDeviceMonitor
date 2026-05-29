@@ -35,9 +35,9 @@ void ChartWidget::setupChart()
     m_axisX->setTickCount(6);
     chart->addAxis(m_axisX, Qt::AlignBottom);
 
-    // 左Y轴（温度 -30~-10℃）
+    // 左Y轴（温度 -30~10℃）
     m_axisTempY = new QValueAxis(this);
-    m_axisTempY->setRange(-30, -10);
+    m_axisTempY->setRange(-30, 10);
     m_axisTempY->setTitleText("温度 (℃)");
     chart->addAxis(m_axisTempY, Qt::AlignLeft);
 

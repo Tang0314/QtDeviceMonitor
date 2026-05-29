@@ -144,20 +144,27 @@ void DatabaseManager::saveAlarm(const AlarmEvent& event)
 }
 
 QList<DeviceData> DatabaseManager::queryByTimeRange(
-    const QDateTime& from, const QDateTime& to)
+    const QDateTime& from, const QDateTime& to,
+    int offset, int limit)
 {
     QList<DeviceData> result;
     if (!m_db.isOpen()) return result;
 
     QSqlQuery query(m_db);
-    query.prepare(
-        "SELECT timestamp, temperature, humidity, pressure, co2, door_open, status_code "
-        "FROM device_data "
-        "WHERE timestamp BETWEEN ? AND ? "
-        "ORDER BY timestamp ASC"
-        );
+    QString sql = "SELECT timestamp, temperature, humidity, pressure, co2, door_open, status_code "
+                  "FROM device_data "
+                  "WHERE timestamp BETWEEN ? AND ? "
+                  "ORDER BY timestamp ASC";
+    if (limit > 0)
+        sql += " LIMIT ? OFFSET ?";
+
+    query.prepare(sql);
     query.addBindValue(from.toMSecsSinceEpoch());
     query.addBindValue(to.toMSecsSinceEpoch());
+    if (limit > 0) {
+        query.addBindValue(limit);
+        query.addBindValue(offset);
+    }
     query.exec();
 
     while (query.next()) {
@@ -171,6 +178,54 @@ QList<DeviceData> DatabaseManager::queryByTimeRange(
         data.statusCode  = query.value(6).toString();
         data.isValid     = true;
         result.append(data);
+    }
+    return result;
+}
+
+int DatabaseManager::countByTimeRange(
+    const QDateTime& from, const QDateTime& to)
+{
+    if (!m_db.isOpen()) return 0;
+
+    QSqlQuery query(m_db);
+    query.prepare("SELECT COUNT(*) FROM device_data WHERE timestamp BETWEEN ? AND ?");
+    query.addBindValue(from.toMSecsSinceEpoch());
+    query.addBindValue(to.toMSecsSinceEpoch());
+    query.exec();
+
+    if (query.next())
+        return query.value(0).toInt();
+    return 0;
+}
+
+QList<AlarmEvent> DatabaseManager::queryAlarmsByTimeRange(
+    const QDateTime& from, const QDateTime& to)
+{
+    QList<AlarmEvent> result;
+    if (!m_db.isOpen()) return result;
+
+    QSqlQuery query(m_db);
+    query.prepare(
+        "SELECT timestamp, channel, alarm_type, value, limit_value, message "
+        "FROM alarm_log "
+        "WHERE timestamp BETWEEN ? AND ? "
+        "ORDER BY timestamp DESC"
+        );
+    query.addBindValue(from.toMSecsSinceEpoch());
+    query.addBindValue(to.toMSecsSinceEpoch());
+    query.exec();
+
+    while (query.next()) {
+        AlarmEvent evt;
+        evt.timestamp = QDateTime::fromMSecsSinceEpoch(query.value(0).toLongLong());
+        evt.channel   = query.value(1).toString();
+        evt.type      = (query.value(2).toString() == "HIGH")
+                            ? AlarmEvent::Type::HighLimit
+                            : AlarmEvent::Type::LowLimit;
+        evt.value     = query.value(3).toDouble();
+        evt.limit     = query.value(4).toDouble();
+        evt.message   = query.value(5).toString();
+        result.append(evt);
     }
     return result;
 }

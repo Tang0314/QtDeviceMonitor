@@ -37,8 +37,8 @@ void HistoryDialog::setupUI()
     m_toEdit->setDateTime(QDateTime::currentDateTime());
     m_toEdit->setCalendarPopup(true);
 
-    m_queryBtn  = new QPushButton("🔍 查询", this);
-    m_exportBtn = new QPushButton("📄 导出CSV", this);
+    m_queryBtn  = new QPushButton("查询", this);
+    m_exportBtn = new QPushButton("导出CSV", this);
 
     timeLayout->addWidget(new QLabel("从:"));
     timeLayout->addWidget(m_fromEdit);
@@ -58,21 +58,27 @@ void HistoryDialog::setupUI()
     m_table->setAlternatingRowColors(true);
     m_table->setSortingEnabled(true);
 
-    m_table->horizontalHeader()->setSectionResizeMode(
-        QHeaderView::Stretch);
-    m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    m_table->setAlternatingRowColors(true);
-    m_table->setSortingEnabled(true);
-
-    // ── 状态栏 ──
+    // ── 分页导航 ──
+    QHBoxLayout* navLayout = new QHBoxLayout();
+    m_prevBtn = new QPushButton("上一页", this);
+    m_nextBtn = new QPushButton("下一页", this);
     m_countLabel = new QLabel("共 0 条记录", this);
+    m_prevBtn->setEnabled(false);
+    m_nextBtn->setEnabled(false);
+
+    navLayout->addWidget(m_countLabel);
+    navLayout->addStretch();
+    navLayout->addWidget(m_prevBtn);
+    navLayout->addWidget(m_nextBtn);
 
     connect(m_queryBtn,  &QPushButton::clicked, this, &HistoryDialog::onQuery);
     connect(m_exportBtn, &QPushButton::clicked, this, &HistoryDialog::onExport);
+    connect(m_prevBtn,   &QPushButton::clicked, this, &HistoryDialog::onPrevPage);
+    connect(m_nextBtn,   &QPushButton::clicked, this, &HistoryDialog::onNextPage);
 
     mainLayout->addWidget(timeGroup);
     mainLayout->addWidget(m_table);
-    mainLayout->addWidget(m_countLabel);
+    mainLayout->addLayout(navLayout);
 }
 
 void HistoryDialog::onQuery()
@@ -82,10 +88,28 @@ void HistoryDialog::onQuery()
         return;
     }
 
+    int total = m_dbManager->countByTimeRange(
+        m_fromEdit->dateTime(), m_toEdit->dateTime());
+    m_totalPages = (total + PAGE_SIZE - 1) / PAGE_SIZE;
+    m_currentPage = 0;
+
+    if (m_totalPages == 0) {
+        m_table->setRowCount(0);
+        m_countLabel->setText("共 0 条记录");
+        m_prevBtn->setEnabled(false);
+        m_nextBtn->setEnabled(false);
+        return;
+    }
+
+    refreshTable();
+}
+
+void HistoryDialog::refreshTable()
+{
+    int offset = m_currentPage * PAGE_SIZE;
     auto dataList = m_dbManager->queryByTimeRange(
-        m_fromEdit->dateTime(),
-        m_toEdit->dateTime()
-        );
+        m_fromEdit->dateTime(), m_toEdit->dateTime(),
+        offset, PAGE_SIZE);
 
     m_table->setRowCount(0);
     for (const auto& data : dataList) {
@@ -103,13 +127,11 @@ void HistoryDialog::onQuery()
         m_table->setItem(row, 4, new QTableWidgetItem(
                                      QString::number(data.co2, 'f', 0)));
 
-        // 门状态
         QTableWidgetItem* doorItem = new QTableWidgetItem(
             data.doorOpen ? "⚠ 开启" : "✓ 关闭");
         doorItem->setForeground(data.doorOpen ? QColor("orange") : Qt::darkGreen);
         m_table->setItem(row, 5, doorItem);
 
-        // 状态
         QTableWidgetItem* statusItem = new QTableWidgetItem(data.statusCode);
         if (data.statusCode == "ALARM") {
             statusItem->setForeground(Qt::red);
@@ -121,7 +143,31 @@ void HistoryDialog::onQuery()
         m_table->setItem(row, 6, statusItem);
     }
 
-    m_countLabel->setText(QString("共 %1 条记录").arg(dataList.size()));
+    int total = m_dbManager->countByTimeRange(
+        m_fromEdit->dateTime(), m_toEdit->dateTime());
+    m_countLabel->setText(QString("第 %1/%2 页（共 %3 条）")
+                              .arg(m_currentPage + 1)
+                              .arg(m_totalPages)
+                              .arg(total));
+
+    m_prevBtn->setEnabled(m_currentPage > 0);
+    m_nextBtn->setEnabled(m_currentPage < m_totalPages - 1);
+}
+
+void HistoryDialog::onPrevPage()
+{
+    if (m_currentPage > 0) {
+        m_currentPage--;
+        refreshTable();
+    }
+}
+
+void HistoryDialog::onNextPage()
+{
+    if (m_currentPage < m_totalPages - 1) {
+        m_currentPage++;
+        refreshTable();
+    }
 }
 
 void HistoryDialog::onExport()

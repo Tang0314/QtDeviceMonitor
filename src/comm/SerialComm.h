@@ -39,8 +39,6 @@ private slots:
     void onError(QSerialPort::SerialPortError error);
 
 private:
-    DeviceData parseFrame(const QByteArray& frame);
-
     QSerialPort* m_serial;
     QByteArray   m_buffer;
 };

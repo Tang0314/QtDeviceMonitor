@@ -22,6 +22,16 @@ public slots:
 public:
     QList<DeviceData> queryByTimeRange(
         const QDateTime& from,
+        const QDateTime& to,
+        int offset = -1,
+        int limit  = -1           // -1 = 不分页，返回全部
+        );
+    int countByTimeRange(
+        const QDateTime& from,
+        const QDateTime& to
+        );
+    QList<AlarmEvent> queryAlarmsByTimeRange(
+        const QDateTime& from,
         const QDateTime& to
         );
     bool exportToCsv(

@@ -62,19 +62,23 @@ void SettingsDialog::setupUI()
 
     groupGrid->addWidget(createChannelGroup(
                              "🌡 温度报警", m_tempHighSpin, m_tempLowSpin, m_tempEnabledCheck,
-                             -15.0, -23.0, -50.0, 50.0, 0.5, 1, " ℃"), 0, 0);
+                             AlarmDefaults::TEMP_HIGH, AlarmDefaults::TEMP_LOW,
+                             -50.0, 50.0, 0.5, 1, " ℃"), 0, 0);
 
     groupGrid->addWidget(createChannelGroup(
                              "💧 湿度报警", m_humHighSpin, m_humLowSpin, m_humEnabledCheck,
-                             95.0, 60.0, 0.0, 100.0, 1.0, 1, " %"), 0, 1);
+                             AlarmDefaults::HUM_HIGH, AlarmDefaults::HUM_LOW,
+                             0.0, 100.0, 1.0, 1, " %"), 0, 1);
 
     groupGrid->addWidget(createChannelGroup(
                              "🔵 压力报警", m_pressHighSpin, m_pressLowSpin, m_pressEnabledCheck,
-                             0.1060, 0.0966, 0.0, 1.0, 0.001, 4, " MPa"), 1, 0);
+                             AlarmDefaults::PRESS_HIGH, AlarmDefaults::PRESS_LOW,
+                             0.0, 1.0, 0.001, 4, " MPa"), 1, 0);
 
     groupGrid->addWidget(createChannelGroup(
                              "🌿 CO₂报警", m_co2HighSpin, m_co2LowSpin, m_co2EnabledCheck,
-                             1000.0, 0.0, 0.0, 5000.0, 50.0, 0, " ppm"), 1, 1);
+                             AlarmDefaults::CO2_HIGH, AlarmDefaults::CO2_LOW,
+                             0.0, 5000.0, 50.0, 0, " ppm"), 1, 1);
 
     // 按钮
     QHBoxLayout* btnLayout = new QHBoxLayout();
@@ -167,6 +171,10 @@ void SettingsDialog::onConfirm()
     }
     if (m_pressHighSpin->value() <= m_pressLowSpin->value()) {
         QMessageBox::warning(this, "设置错误", "压力上限必须大于下限！");
+        return;
+    }
+    if (m_co2HighSpin->value() <= m_co2LowSpin->value()) {
+        QMessageBox::warning(this, "设置错误", "CO₂上限必须大于下限！");
         return;
     }
     accept();

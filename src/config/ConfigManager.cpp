@@ -52,22 +52,22 @@ void ConfigManager::saveCo2Config(const AlarmConfig& config)
 
 AlarmConfig ConfigManager::loadTempConfig()
 {
-    return loadConfig("alarm/temperature", -15.0, -23.0);
+    return loadConfig("alarm/temperature", AlarmDefaults::TEMP_HIGH, AlarmDefaults::TEMP_LOW);
 }
 
 AlarmConfig ConfigManager::loadHumConfig()
 {
-    return loadConfig("alarm/humidity", 95.0, 60.0);
+    return loadConfig("alarm/humidity", AlarmDefaults::HUM_HIGH, AlarmDefaults::HUM_LOW);
 }
 
 AlarmConfig ConfigManager::loadPressConfig()
 {
-    return loadConfig("alarm/pressure", 0.1060, 0.0966);
+    return loadConfig("alarm/pressure", AlarmDefaults::PRESS_HIGH, AlarmDefaults::PRESS_LOW);
 }
 
 AlarmConfig ConfigManager::loadCo2Config()
 {
-    return loadConfig("alarm/co2", 1000.0, 0.0);
+    return loadConfig("alarm/co2", AlarmDefaults::CO2_HIGH, AlarmDefaults::CO2_LOW);
 }
 
 void ConfigManager::saveTcpHost(const QString& host)

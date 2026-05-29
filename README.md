@@ -5,20 +5,24 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Qt](https://img.shields.io/badge/Qt-6.7.3-green)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
-![Version](https://img.shields.io/badge/version-1.1.0-orange)
+![Version](https://img.shields.io/badge/version-1.2.0-orange)
 
 ## 功能特性
 
 - 📊 实时采集显示（温度/湿度/压力/CO₂/门状态）
 - 📈 实时三轴曲线图（温度/湿度/CO₂独立Y轴）
 - ⚠️ 5通道报警检测（超限/低限/门开报警，颜色提示）
+- 📋 报警历史查询（按时间范围检索，表格展示）
 - 🗄️ 历史数据存储（SQLite，批量写入）
-- 📄 历史查询与CSV导出（UTF-8，Excel直接打开）
-- ⚙️ 报警阈值可视化配置（重启保留）
+- 📄 历史查询与CSV导出（分页浏览，UTF-8 BOM）
+- ⚙️ 报警阈值可视化配置（重启保留，统一常量管理）
+- 🔀 数据源状态机（Mock/TCP/串口三种模式互斥切换）
 - 🌐 TCP通信（含内置虚拟TCP设备，支持断线重连）
 - 🔌 串口通信（支持波特率/数据位/校验位配置）
-- 🔧 内置Mock数据生成器（无需硬件即可运行）
+- 🔧 内置Mock数据生成器（共享公式，无需硬件即可运行）
 - 🐍 Python虚拟串口脚本（配合虚拟串口工具测试）
+- 📝 文件日志系统（按日期记录，便于排查问题）
+- 📌 状态栏（显示数据源/记录数/运行时长）
 
 ## 技术栈
 
@@ -77,7 +81,10 @@ py docs/virtual_serial_device.py
 菜单 → 设置 → 报警阈值（重启后自动恢复）
 
 ### 查询历史数据
-菜单 → 文件 → 历史查询
+菜单 → 文件 → 历史查询（支持分页浏览）
+
+### 查询报警历史
+菜单 → 文件 → 报警历史
 
 ### 导出 CSV
 菜单 → 文件 → 导出 CSV
@@ -104,15 +111,18 @@ CSV 文本帧格式（每帧以 `\r\n` 结尾）：
 ```text
 QtDeviceMonitor/
 ├── src/
-│   ├── ui/      # 界面模块（MainWindow/ChartWidget/SettingsDialog等）
+│   ├── ui/      # 界面模块（MainWindow/ChartWidget/SettingsDialog/HistoryDialog/AlarmHistoryDialog等）
 │   ├── comm/    # 通信模块（TcpComm/SerialComm）
-│   ├── data/    # 数据模块（DeviceData/DatabaseManager）
-│   ├── alarm/   # 报警模块（AlarmChecker）
-│   ├── mock/    # 虚拟设备（MockDataGenerator/VirtualTcpDevice）
-│   └── config/  # 配置模块（ConfigManager）
+│   ├── data/    # 数据模块（DeviceData/DataParser/DatabaseManager）
+│   ├── alarm/   # 报警模块（AlarmChecker，含AlarmDefaults常量）
+│   ├── mock/    # 虚拟设备（MockDataGenerator/VirtualTcpDevice/MockDataFormulas）
+│   ├── config/  # 配置模块（ConfigManager）
+│   └── utils/   # 工具模块（LogManager）
 ├── docs/
 │   ├── CHANGELOG.md
 │   └── virtual_serial_device.py
+├── virtual_device/  # 独立虚拟设备 GUI 子项目
+├── tests/
 ├── resources/
 └── CMakeLists.txt
 ```

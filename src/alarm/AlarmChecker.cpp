@@ -3,18 +3,17 @@
 AlarmChecker::AlarmChecker(QObject* parent)
     : QObject(parent)
 {
-    // 冷链仓储默认阈值
-    m_tempConfig.highLimit  = -15.0;
-    m_tempConfig.lowLimit   = -23.0;
+    m_tempConfig.highLimit  = AlarmDefaults::TEMP_HIGH;
+    m_tempConfig.lowLimit   = AlarmDefaults::TEMP_LOW;
 
-    m_humConfig.highLimit   = 95.0;
-    m_humConfig.lowLimit    = 60.0;
+    m_humConfig.highLimit   = AlarmDefaults::HUM_HIGH;
+    m_humConfig.lowLimit    = AlarmDefaults::HUM_LOW;
 
-    m_pressConfig.highLimit = 0.1060;
-    m_pressConfig.lowLimit  = 0.0966;
+    m_pressConfig.highLimit = AlarmDefaults::PRESS_HIGH;
+    m_pressConfig.lowLimit  = AlarmDefaults::PRESS_LOW;
 
-    m_co2Config.highLimit   = 1000.0;
-    m_co2Config.lowLimit    = 0.0;
+    m_co2Config.highLimit   = AlarmDefaults::CO2_HIGH;
+    m_co2Config.lowLimit    = AlarmDefaults::CO2_LOW;
 }
 
 void AlarmChecker::setTempConfig(const AlarmConfig& config)

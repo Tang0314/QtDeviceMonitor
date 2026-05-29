@@ -23,9 +23,14 @@ set(SOURCES
     src/ui/HistoryDialog.h
     src/ui/SerialConfigDialog.cpp
     src/ui/SerialConfigDialog.h
+    src/ui/AlarmHistoryDialog.cpp
+    src/ui/AlarmHistoryDialog.h
     src/data/DeviceData.h
+    src/data/DataParser.cpp
+    src/data/DataParser.h
     src/data/DatabaseManager.cpp
     src/data/DatabaseManager.h
+    src/mock/MockDataFormulas.h
     src/mock/MockDataGenerator.cpp
     src/mock/MockDataGenerator.h
     src/mock/VirtualTcpDevice.cpp
@@ -34,6 +39,8 @@ set(SOURCES
     src/comm/TcpComm.h
     src/comm/SerialComm.cpp
     src/comm/SerialComm.h
+    src/utils/LogManager.cpp
+    src/utils/LogManager.h
     src/alarm/AlarmChecker.cpp
     src/alarm/AlarmChecker.h
     src/config/ConfigManager.cpp

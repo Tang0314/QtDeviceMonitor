@@ -7,22 +7,18 @@
 #include <QLabel>
 #include "data/DatabaseManager.h"
 
-class HistoryDialog : public QDialog {
+class AlarmHistoryDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit HistoryDialog(DatabaseManager* dbManager,
-                           QWidget* parent = nullptr);
+    explicit AlarmHistoryDialog(DatabaseManager* dbManager,
+                                 QWidget* parent = nullptr);
 
 private slots:
     void onQuery();
-    void onExport();
-    void onPrevPage();
-    void onNextPage();
 
 private:
     void setupUI();
-    void refreshTable();
 
     DatabaseManager* m_dbManager;
 
@@ -30,13 +26,5 @@ private:
     QDateTimeEdit* m_toEdit;
     QTableWidget*  m_table;
     QPushButton*   m_queryBtn;
-    QPushButton*   m_exportBtn;
-    QPushButton*   m_prevBtn;
-    QPushButton*   m_nextBtn;
     QLabel*        m_countLabel;
-
-    int m_currentPage = 0;
-    int m_totalPages  = 0;
-
-    static const int PAGE_SIZE = 100;
 };
