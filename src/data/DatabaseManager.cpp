@@ -1,61 +1,102 @@
 #include "data/DatabaseManager.h"
+#include "data/DatabaseWorker.h"
+#include <QThread>
 #include <QSqlQuery>
 #include <QSqlError>
 #include <QDebug>
 #include <QFile>
+#include <QFileInfo>
 #include <QTextStream>
 #include <QDir>
+#include <QCoreApplication>
+#include <QMetaObject>
+#include <QUuid>
 
 DatabaseManager::DatabaseManager(QObject* parent)
     : QObject(parent)
-{}
+    , m_mainConnectionName("db_main_" + QUuid::createUuid().toString(QUuid::WithoutBraces))
+    , m_workerConnectionName("db_worker_" + QUuid::createUuid().toString(QUuid::WithoutBraces))
+    , m_workerThread(new QThread(this))
+    , m_worker(new DatabaseWorker)
+{
+    m_worker->moveToThread(m_workerThread);
+    connect(m_workerThread, &QThread::finished,
+            m_worker, &QObject::deleteLater);
+    m_workerThread->start();
+}
 
 DatabaseManager::~DatabaseManager()
 {
-    if (!m_buffer.isEmpty() && m_db.isOpen()) {
-        QSqlQuery query(m_db);
-        m_db.transaction();
-        for (const auto& d : m_buffer) {
-            query.prepare(
-                "INSERT INTO device_data "
-                "(timestamp, temperature, humidity, pressure, co2, door_open, status_code) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?)"
-                );
-            query.addBindValue(d.timestamp.toMSecsSinceEpoch());
-            query.addBindValue(d.temperature);
-            query.addBindValue(d.humidity);
-            query.addBindValue(d.pressure);
-            query.addBindValue(d.co2);
-            query.addBindValue(d.doorOpen ? 1 : 0);
-            query.addBindValue(d.statusCode);
-            query.exec();
-        }
-        m_db.commit();
-    }
+    flush();
+    m_workerThread->quit();
+    m_workerThread->wait(3000);
+    m_worker = nullptr;
+
     if (m_db.isOpen()) m_db.close();
+    m_db = QSqlDatabase();
+    QSqlDatabase::removeDatabase(m_mainConnectionName);
 }
 
 bool DatabaseManager::initialize(const QString& dbPath)
 {
-    // 确保目录存在
     QDir().mkpath(QFileInfo(dbPath).absolutePath());
 
-    m_db = QSqlDatabase::addDatabase("QSQLITE");
+    m_db = QSqlDatabase::addDatabase("QSQLITE", m_mainConnectionName);
     m_db.setDatabaseName(dbPath);
-
     if (!m_db.open()) {
-        qWarning() << "数据库打开失败:" << m_db.lastError().text();
+        qWarning() << "DatabaseManager: main DB open failed:" << m_db.lastError().text();
         return false;
     }
-    return createTables();
+
+    QSqlQuery q(m_db);
+    q.exec("PRAGMA journal_mode=WAL");
+    q.exec("PRAGMA synchronous=NORMAL");
+    q.exec("PRAGMA busy_timeout=3000");
+
+    createTables();
+
+    // BlockingQueuedConnection：主线程等待，worker 线程自己的 event loop 执行 slot，
+    // 不依赖主线程 event loop——所以 event loop 未启动时也能正常工作
+    bool ok = false;
+    QMetaObject::invokeMethod(m_worker, "initialize", Qt::BlockingQueuedConnection,
+                              Q_RETURN_ARG(bool, ok),
+                              Q_ARG(QString, dbPath),
+                              Q_ARG(QString, m_workerConnectionName));
+    m_initialized = ok;
+    return ok;
 }
 
-bool DatabaseManager::createTables()
+void DatabaseManager::saveData(const DeviceData& data)
 {
-    QSqlQuery query(m_db);
+    if (!m_initialized) return;
+    QMetaObject::invokeMethod(m_worker, "saveData", Qt::QueuedConnection,
+                              Q_ARG(DeviceData, data));
+}
 
-    // 采集数据表
-    bool ok = query.exec(
+void DatabaseManager::saveAlarm(const AlarmEvent& event)
+{
+    if (!m_initialized) return;
+    QMetaObject::invokeMethod(m_worker, "saveAlarm", Qt::QueuedConnection,
+                              Q_ARG(AlarmEvent, event));
+}
+
+void DatabaseManager::flush()
+{
+    if (!m_initialized || !m_workerThread->isRunning()) return;
+
+    QMetaObject::invokeMethod(m_worker, "flush", Qt::BlockingQueuedConnection);
+}
+
+void DatabaseManager::createTables()
+{
+    executeSchema(m_db);
+}
+
+bool DatabaseManager::executeSchema(QSqlDatabase& db)
+{
+    QSqlQuery q(db);
+    bool ok = true;
+    ok = q.exec(
         "CREATE TABLE IF NOT EXISTS device_data ("
         "id          INTEGER PRIMARY KEY AUTOINCREMENT,"
         "timestamp   INTEGER NOT NULL,"
@@ -65,15 +106,8 @@ bool DatabaseManager::createTables()
         "co2         REAL    NOT NULL DEFAULT 0,"
         "door_open   INTEGER NOT NULL DEFAULT 0,"
         "status_code TEXT    NOT NULL DEFAULT 'OK'"
-        ")"
-        );
-    if (!ok) {
-        qWarning() << "建表失败:" << query.lastError().text();
-        return false;
-    }
-
-    // 报警日志表
-    query.exec(
+        ")") && ok;
+    ok = q.exec(
         "CREATE TABLE IF NOT EXISTS alarm_log ("
         "id          INTEGER PRIMARY KEY AUTOINCREMENT,"
         "timestamp   INTEGER NOT NULL,"
@@ -82,65 +116,13 @@ bool DatabaseManager::createTables()
         "value       REAL    NOT NULL,"
         "limit_value REAL    NOT NULL,"
         "message     TEXT    NOT NULL"
-        ")"
-        );
-
-    // 索引
-    query.exec(
-        "CREATE INDEX IF NOT EXISTS idx_timestamp "
-        "ON device_data(timestamp)"
-        );
-
-    return true;
-}
-
-void DatabaseManager::saveData(const DeviceData& data)
-{
-    if (!data.isValid || !m_db.isOpen()) return;
-
-    m_buffer.append(data);
-
-    if (m_buffer.size() >= BUFFER_SIZE) {
-        QSqlQuery query(m_db);
-        m_db.transaction();
-        for (const auto& d : m_buffer) {
-            query.prepare(
-                "INSERT INTO device_data "
-                "(timestamp, temperature, humidity, pressure, co2, door_open, status_code) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?)"
-                );
-            query.addBindValue(d.timestamp.toMSecsSinceEpoch());
-            query.addBindValue(d.temperature);
-            query.addBindValue(d.humidity);
-            query.addBindValue(d.pressure);
-            query.addBindValue(d.co2);
-            query.addBindValue(d.doorOpen ? 1 : 0);
-            query.addBindValue(d.statusCode);
-            query.exec();
-        }
-        m_db.commit();
-        m_buffer.clear();
+        ")") && ok;
+    ok = q.exec("CREATE INDEX IF NOT EXISTS idx_timestamp ON device_data(timestamp)") && ok;
+    ok = q.exec("CREATE INDEX IF NOT EXISTS idx_alarm_timestamp ON alarm_log(timestamp)") && ok;
+    if (!ok) {
+        qWarning() << "DatabaseManager: create schema failed:" << q.lastError().text();
     }
-}
-
-void DatabaseManager::saveAlarm(const AlarmEvent& event)
-{
-    if (!m_db.isOpen()) return;
-
-    QSqlQuery query(m_db);
-    query.prepare(
-        "INSERT INTO alarm_log "
-        "(timestamp, channel, alarm_type, value, limit_value, message) "
-        "VALUES (?, ?, ?, ?, ?, ?)"
-        );
-    query.addBindValue(event.timestamp.toMSecsSinceEpoch());
-    query.addBindValue(event.channel);
-    query.addBindValue(event.type == AlarmEvent::Type::HighLimit
-                           ? "HIGH" : "LOW");
-    query.addBindValue(event.value);
-    query.addBindValue(event.limit);
-    query.addBindValue(event.message);
-    query.exec();
+    return ok;
 }
 
 QList<DeviceData> DatabaseManager::queryByTimeRange(
@@ -163,9 +145,12 @@ QList<DeviceData> DatabaseManager::queryByTimeRange(
     query.addBindValue(to.toMSecsSinceEpoch());
     if (limit > 0) {
         query.addBindValue(limit);
-        query.addBindValue(offset);
+        query.addBindValue(qMax(0, offset));
     }
-    query.exec();
+    if (!query.exec()) {
+        qWarning() << "DatabaseManager: queryByTimeRange failed:" << query.lastError().text();
+        return result;
+    }
 
     while (query.next()) {
         DeviceData data;
@@ -191,7 +176,10 @@ int DatabaseManager::countByTimeRange(
     query.prepare("SELECT COUNT(*) FROM device_data WHERE timestamp BETWEEN ? AND ?");
     query.addBindValue(from.toMSecsSinceEpoch());
     query.addBindValue(to.toMSecsSinceEpoch());
-    query.exec();
+    if (!query.exec()) {
+        qWarning() << "DatabaseManager: countByTimeRange failed:" << query.lastError().text();
+        return 0;
+    }
 
     if (query.next())
         return query.value(0).toInt();
@@ -213,7 +201,10 @@ QList<AlarmEvent> DatabaseManager::queryAlarmsByTimeRange(
         );
     query.addBindValue(from.toMSecsSinceEpoch());
     query.addBindValue(to.toMSecsSinceEpoch());
-    query.exec();
+    if (!query.exec()) {
+        qWarning() << "DatabaseManager: queryAlarmsByTimeRange failed:" << query.lastError().text();
+        return result;
+    }
 
     while (query.next()) {
         AlarmEvent evt;

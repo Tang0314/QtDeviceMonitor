@@ -9,5 +9,7 @@ int main(int argc, char *argv[])
     LogManager::installDefault();
     MainWindow w;
     w.show();
-    return a.exec();
+    const int exitCode = a.exec();
+    LogManager::shutdown();
+    return exitCode;
 }

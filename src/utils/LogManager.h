@@ -10,4 +10,5 @@ public:
 
     // 安装默认路径（QCoreApplication::applicationDirPath() + "/userdata/app.log"）
     static void installDefault();
+    static void shutdown();
 };

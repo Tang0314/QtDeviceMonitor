@@ -33,6 +33,7 @@ signals:
     void dataReceived(const DeviceData& data);
     void connectionStateChanged(bool connected);
     void errorOccurred(const QString& msg);
+    void frameDropped(const QString& reason, const QByteArray& frame);
 
 private slots:
     void onReadyRead();
@@ -41,4 +42,5 @@ private slots:
 private:
     QSerialPort* m_serial;
     QByteArray   m_buffer;
+    static const int MAX_BUFFER_SIZE = 4096;
 };

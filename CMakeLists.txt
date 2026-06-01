@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(QtDeviceMonitor VERSION 1.0.0 LANGUAGES CXX)
+project(QtDeviceMonitor VERSION 1.3.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,13 +8,12 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 6.7 REQUIRED COMPONENTS
-    Core Widgets Network SerialPort Sql Charts
+    Core Widgets Network SerialPort Sql Charts Test
 )
 
-set(SOURCES
-    src/main.cpp
-    src/ui/mainwindow.cpp
-    src/ui/mainwindow.h
+set(APP_SOURCES
+    src/core/DeviceMonitorController.cpp
+    src/core/DeviceMonitorController.h
     src/ui/ChartWidget.cpp
     src/ui/ChartWidget.h
     src/ui/SettingsDialog.cpp
@@ -30,6 +29,8 @@ set(SOURCES
     src/data/DataParser.h
     src/data/DatabaseManager.cpp
     src/data/DatabaseManager.h
+    src/data/DatabaseWorker.cpp
+    src/data/DatabaseWorker.h
     src/mock/MockDataFormulas.h
     src/mock/MockDataGenerator.cpp
     src/mock/MockDataGenerator.h
@@ -47,7 +48,13 @@ set(SOURCES
     src/config/ConfigManager.h
 )
 
-qt_add_executable(QtDeviceMonitor ${SOURCES})
+set(MAIN_SOURCES
+    src/main.cpp
+    src/ui/mainwindow.cpp
+    src/ui/mainwindow.h
+)
+
+qt_add_executable(QtDeviceMonitor ${MAIN_SOURCES} ${APP_SOURCES})
 
 target_include_directories(QtDeviceMonitor PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -68,3 +75,8 @@ if(WIN32)
         WIN32_EXECUTABLE TRUE
     )
 endif()
+
+add_subdirectory(virtual_device)
+
+enable_testing()
+add_subdirectory(tests)

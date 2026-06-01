@@ -2,6 +2,18 @@
 
 #include <QString>
 #include <QDateTime>
+#include <QMetaType>
+
+namespace DeviceDataLimits {
+    constexpr double TEMP_MIN = -30.0;
+    constexpr double TEMP_MAX = 10.0;
+    constexpr double HUM_MIN = 0.0;
+    constexpr double HUM_MAX = 100.0;
+    constexpr double PRESS_MIN = 0.08;
+    constexpr double PRESS_MAX = 0.12;
+    constexpr double CO2_MIN = 0.0;
+    constexpr double CO2_MAX = 5000.0;
+}
 
 // 设备数据结构体 - 冷链仓储监控
 struct DeviceData {
@@ -24,3 +36,5 @@ struct DeviceData {
         , isValid(false)
     {}
 };
+
+Q_DECLARE_METATYPE(DeviceData)

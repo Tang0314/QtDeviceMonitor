@@ -20,6 +20,7 @@ signals:
     void dataReceived(const DeviceData& data);     // 解析完成的数据
     void connectionStateChanged(bool connected);   // 连接状态变化
     void errorOccurred(const QString& msg);        // 错误信息
+    void frameDropped(const QString& reason, const QByteArray& frame);
 
 private slots:
     void onConnected();
@@ -36,4 +37,5 @@ private:
     QString  m_host;
     quint16  m_port = 8888;
     bool     m_autoReconnect = true;
+    static const int MAX_BUFFER_SIZE = 4096;
 };

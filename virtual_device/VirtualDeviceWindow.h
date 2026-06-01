@@ -9,7 +9,6 @@
 #include <QSpinBox>
 #include <QTextEdit>
 #include <QListWidget>
-#include <QtMath>
 
 class VirtualDeviceWindow : public QMainWindow {
     Q_OBJECT

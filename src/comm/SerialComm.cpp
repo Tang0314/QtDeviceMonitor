@@ -19,6 +19,8 @@ SerialComm::~SerialComm()
 
 bool SerialComm::open(const SerialConfig& config)
 {
+    close();
+    m_buffer.clear();
     m_serial->setPortName(config.portName);
     m_serial->setBaudRate(config.baudRate);
     m_serial->setDataBits(config.dataBits);
@@ -38,6 +40,7 @@ bool SerialComm::open(const SerialConfig& config)
 
 void SerialComm::close()
 {
+    m_buffer.clear();
     if (m_serial->isOpen()) {
         m_serial->close();
         emit connectionStateChanged(false);
@@ -61,6 +64,11 @@ QStringList SerialComm::availablePorts()
 void SerialComm::onReadyRead()
 {
     m_buffer += m_serial->readAll();
+    if (m_buffer.size() > MAX_BUFFER_SIZE) {
+        emit frameDropped("receive buffer overflow", m_buffer.left(128));
+        m_buffer.clear();
+        return;
+    }
 
     while (m_buffer.contains('\n')) {
         int idx = m_buffer.indexOf('\n');
@@ -68,9 +76,12 @@ void SerialComm::onReadyRead()
         m_buffer = m_buffer.mid(idx + 1);
 
         if (!frame.isEmpty()) {
-            DeviceData data = DataParser::parse(frame);
-            if (data.isValid) {
-                emit dataReceived(data);
+            ParseResult result = DataParser::parseFrame(frame);
+            if (result.isValid()) {
+                emit dataReceived(result.data);
+            } else {
+                emit frameDropped(result.error, frame);
+                qWarning() << "Serial frame dropped:" << result.error << frame;
             }
         }
     }

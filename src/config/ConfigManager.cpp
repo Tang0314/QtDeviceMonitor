@@ -27,7 +27,7 @@ AlarmConfig ConfigManager::loadConfig(
     config.lowLimit  = m_settings.value("lowLimit",  defaultLow).toDouble();
     config.enabled   = m_settings.value("enabled",   true).toBool();
     m_settings.endGroup();
-    return config;
+    return normalizedAlarmConfig(config, defaultHigh, defaultLow);
 }
 
 void ConfigManager::saveTempConfig(const AlarmConfig& config)

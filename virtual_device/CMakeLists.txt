@@ -12,6 +12,8 @@ set(VD_SOURCES
     main.cpp
     VirtualDeviceWindow.cpp
     VirtualDeviceWindow.h
+    ../src/mock/MockDataFormulas.h
+    ../src/data/DeviceData.h
 )
 
 qt_add_executable(VirtualDevice ${VD_SOURCES})

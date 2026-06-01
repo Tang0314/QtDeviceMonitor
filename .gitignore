@@ -75,6 +75,8 @@ CMakeLists.txt.user*
 # 编译输出目录
 build/
 Build/
+build-*/
+cmake-build-*/
 
 # Qt Creator 用户配置
 *.user
@@ -83,3 +85,14 @@ Build/
 # CMake 缓存
 CMakeCache.txt
 CMakeFiles/
+
+# Claude Code 项目配置（仅本地使用，不上传）
+.claude/
+CLAUDE.md
+
+# 运行期数据
+userdata/
+*.db
+*.db-shm
+*.db-wal
+*.log

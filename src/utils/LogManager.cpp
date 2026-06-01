@@ -46,13 +46,22 @@ static void logMessageHandler(QtMsgType type, const QMessageLogContext& context,
 
 void LogManager::install(const QString& appDir)
 {
+    if (g_logFile) {
+        return;
+    }
+
     QDir().mkpath(appDir + "/userdata");
 
     QString logPath = appDir + "/userdata/app.log";
 
     g_logFile = new QFile(logPath);
-    g_logFile->open(QIODevice::Append | QIODevice::Text);
+    if (!g_logFile->open(QIODevice::Append | QIODevice::Text)) {
+        delete g_logFile;
+        g_logFile = nullptr;
+        return;
+    }
     g_logStream = new QTextStream(g_logFile);
+    g_logStream->setEncoding(QStringConverter::Utf8);
 
     qInstallMessageHandler(logMessageHandler);
 
@@ -62,4 +71,17 @@ void LogManager::install(const QString& appDir)
 void LogManager::installDefault()
 {
     install(QCoreApplication::applicationDirPath());
+}
+
+void LogManager::shutdown()
+{
+    QMutexLocker locker(&g_logMutex);
+    qInstallMessageHandler(nullptr);
+    delete g_logStream;
+    g_logStream = nullptr;
+    if (g_logFile) {
+        g_logFile->close();
+        delete g_logFile;
+        g_logFile = nullptr;
+    }
 }

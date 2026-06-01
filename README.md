@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Qt](https://img.shields.io/badge/Qt-6.7.3-green)
 ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
-![Version](https://img.shields.io/badge/version-1.2.0-orange)
+![Version](https://img.shields.io/badge/version-1.3.0-orange)
 
 ## 功能特性
 
@@ -23,6 +23,8 @@
 - 🐍 Python虚拟串口脚本（配合虚拟串口工具测试）
 - 📝 文件日志系统（按日期记录，便于排查问题）
 - 📌 状态栏（显示数据源/记录数/运行时长）
+- 🧭 核心控制器分层（UI 与采集/报警/持久化编排解耦）
+- ✅ Qt Test 单元测试（协议解析、报警状态机）
 
 ## 技术栈
 
@@ -35,6 +37,7 @@
 | 数据库   | SQLite (Qt SQL)            |
 | 配置     | QSettings (INI格式)        |
 | 构建     | CMake 3.21+                |
+| 测试     | Qt Test / CTest            |
 
 ## 快速开始
 
@@ -55,6 +58,14 @@
 git clone https://github.com/Tang0314/QtDeviceMonitor.git
 cd QtDeviceMonitor
 # 用 Qt Creator 打开 CMakeLists.txt 编译运行
+```
+
+### 命令行构建与测试
+
+```bash
+cmake -S . -B build/debug -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH=D:/Qt/6.7.3/mingw_64
+cmake --build build/debug --parallel
+ctest --test-dir build/debug --output-on-failure
 ```
 
 ## 使用说明
@@ -112,8 +123,9 @@ CSV 文本帧格式（每帧以 `\r\n` 结尾）：
 QtDeviceMonitor/
 ├── src/
 │   ├── ui/      # 界面模块（MainWindow/ChartWidget/SettingsDialog/HistoryDialog/AlarmHistoryDialog等）
+│   ├── core/    # 核心控制器（采集生命周期、数据源切换、报警和持久化编排）
 │   ├── comm/    # 通信模块（TcpComm/SerialComm）
-│   ├── data/    # 数据模块（DeviceData/DataParser/DatabaseManager）
+│   ├── data/    # 数据模块（DeviceData/DataParser/DatabaseManager/DatabaseWorker）
 │   ├── alarm/   # 报警模块（AlarmChecker，含AlarmDefaults常量）
 │   ├── mock/    # 虚拟设备（MockDataGenerator/VirtualTcpDevice/MockDataFormulas）
 │   ├── config/  # 配置模块（ConfigManager）
@@ -122,7 +134,7 @@ QtDeviceMonitor/
 │   ├── CHANGELOG.md
 │   └── virtual_serial_device.py
 ├── virtual_device/  # 独立虚拟设备 GUI 子项目
-├── tests/
+├── tests/       # Qt Test 单元测试
 ├── resources/
 └── CMakeLists.txt
 ```

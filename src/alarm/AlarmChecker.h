@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QMetaType>
 #include "data/DeviceData.h"
 
 // 各通道默认报警阈值 —— 唯一定义点
@@ -22,6 +23,12 @@ struct AlarmConfig {
     bool    enabled   = true;
 };
 
+Q_DECLARE_METATYPE(AlarmConfig)
+
+AlarmConfig normalizedAlarmConfig(const AlarmConfig& config,
+                                  double defaultHigh,
+                                  double defaultLow);
+
 struct AlarmEvent {
     QDateTime timestamp;
     QString   channel;
@@ -30,6 +37,8 @@ struct AlarmEvent {
     enum class Type { HighLimit, LowLimit } type;
     QString   message;
 };
+
+Q_DECLARE_METATYPE(AlarmEvent)
 
 class AlarmChecker : public QObject {
     Q_OBJECT

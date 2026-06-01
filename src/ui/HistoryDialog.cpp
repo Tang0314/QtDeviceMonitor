@@ -58,6 +58,9 @@ void HistoryDialog::setupUI()
     m_table->setAlternatingRowColors(true);
     m_table->setSortingEnabled(true);
 
+    // 时间列自适应内容宽度（yyyy-MM-dd hh:mm:ss 需要 ~30 个字符宽度）
+    m_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+
     // ── 分页导航 ──
     QHBoxLayout* navLayout = new QHBoxLayout();
     m_prevBtn = new QPushButton("上一页", this);

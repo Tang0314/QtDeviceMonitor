@@ -1,5 +1,21 @@
 #include "alarm/AlarmChecker.h"
 
+#include <QDebug>
+
+AlarmConfig normalizedAlarmConfig(const AlarmConfig& config,
+                                  double defaultHigh,
+                                  double defaultLow)
+{
+    AlarmConfig normalized = config;
+    if (normalized.highLimit <= normalized.lowLimit) {
+        qWarning() << "Invalid alarm config, fallback to defaults:"
+                   << normalized.lowLimit << normalized.highLimit;
+        normalized.highLimit = defaultHigh;
+        normalized.lowLimit = defaultLow;
+    }
+    return normalized;
+}
+
 AlarmChecker::AlarmChecker(QObject* parent)
     : QObject(parent)
 {
@@ -18,25 +34,33 @@ AlarmChecker::AlarmChecker(QObject* parent)
 
 void AlarmChecker::setTempConfig(const AlarmConfig& config)
 {
-    m_tempConfig   = config;
+    m_tempConfig   = normalizedAlarmConfig(config,
+                                           AlarmDefaults::TEMP_HIGH,
+                                           AlarmDefaults::TEMP_LOW);
     m_tempAlarming = false;
 }
 
 void AlarmChecker::setHumConfig(const AlarmConfig& config)
 {
-    m_humConfig   = config;
+    m_humConfig   = normalizedAlarmConfig(config,
+                                          AlarmDefaults::HUM_HIGH,
+                                          AlarmDefaults::HUM_LOW);
     m_humAlarming = false;
 }
 
 void AlarmChecker::setPressConfig(const AlarmConfig& config)
 {
-    m_pressConfig   = config;
+    m_pressConfig   = normalizedAlarmConfig(config,
+                                            AlarmDefaults::PRESS_HIGH,
+                                            AlarmDefaults::PRESS_LOW);
     m_pressAlarming = false;
 }
 
 void AlarmChecker::setCo2Config(const AlarmConfig& config)
 {
-    m_co2Config   = config;
+    m_co2Config   = normalizedAlarmConfig(config,
+                                          AlarmDefaults::CO2_HIGH,
+                                          AlarmDefaults::CO2_LOW);
     m_co2Alarming = false;
 }
 
@@ -45,6 +69,7 @@ void AlarmChecker::checkChannel(
     const AlarmConfig& config, bool& alarmFlag)
 {
     if (!config.enabled) return;
+    if (config.highLimit <= config.lowLimit) return;
 
     bool over = value > config.highLimit || value < config.lowLimit;
 

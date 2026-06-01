@@ -30,7 +30,11 @@ void TcpComm::connectToDevice(const QString& host, quint16 port)
 {
     m_host = host;
     m_port = port;
+    m_autoReconnect = true;
     m_buffer.clear();
+    if (m_socket->state() != QAbstractSocket::UnconnectedState) {
+        m_socket->abort();
+    }
     m_socket->connectToHost(host, port);
 }
 
@@ -38,7 +42,10 @@ void TcpComm::disconnectFromDevice()
 {
     m_autoReconnect = false;
     m_reconnectTimer->stop();
-    m_socket->disconnectFromHost();
+    m_buffer.clear();
+    if (m_socket->state() != QAbstractSocket::UnconnectedState) {
+        m_socket->disconnectFromHost();
+    }
 }
 
 bool TcpComm::isConnected() const
@@ -64,6 +71,11 @@ void TcpComm::onDisconnected()
 void TcpComm::onReadyRead()
 {
     m_buffer += m_socket->readAll();
+    if (m_buffer.size() > MAX_BUFFER_SIZE) {
+        emit frameDropped("receive buffer overflow", m_buffer.left(128));
+        m_buffer.clear();
+        return;
+    }
 
     // 按行解析（每帧以 \n 结尾）
     while (m_buffer.contains('\n')) {
@@ -72,9 +84,12 @@ void TcpComm::onReadyRead()
         m_buffer = m_buffer.mid(idx + 1);
 
         if (!frame.isEmpty()) {
-            DeviceData data = DataParser::parse(frame);
-            if (data.isValid) {
-                emit dataReceived(data);
+            ParseResult result = DataParser::parseFrame(frame);
+            if (result.isValid()) {
+                emit dataReceived(result.data);
+            } else {
+                emit frameDropped(result.error, frame);
+                qWarning() << "TCP frame dropped:" << result.error << frame;
             }
         }
     }

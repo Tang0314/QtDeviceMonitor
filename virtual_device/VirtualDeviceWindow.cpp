@@ -1,4 +1,6 @@
 #include "VirtualDeviceWindow.h"
+#include "mock/MockDataFormulas.h"
+
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGroupBox>
@@ -144,25 +146,7 @@ void VirtualDeviceWindow::onSendTimer()
 
 QString VirtualDeviceWindow::generateFrame()
 {
-    double temp     = -18.0 + 3.0  * qSin(m_time * 0.05);
-    double humidity = 85.0  + 10.0 * qSin(m_time * 0.08 + 1.0);
-    double pressure = 0.1013 + 0.005 * qSin(m_time * 0.03 + 2.0);
-    double co2      = 800.0  + 300.0 * qSin(m_time * 0.06 + 0.5);
-    int    door     = (int(m_time) % 300 >= 200
-                && int(m_time) % 300 < 230) ? 1 : 0;
-
-    QString status;
-    if (temp > -15.0 || co2 > 1000.0)       status = "ALARM";
-    else if (humidity > 95.0 || door == 1)   status = "WARN";
-    else                                      status = "OK";
-
-    return QString("%1,%2,%3,%4,%5,%6")
-        .arg(temp,     0, 'f', 1)
-        .arg(humidity, 0, 'f', 1)
-        .arg(pressure, 0, 'f', 4)
-        .arg(co2,      0, 'f', 0)
-        .arg(door)
-        .arg(status);
+    return MockDataFormulas::toCsvFrame(MockDataFormulas::generate(m_time));
 }
 
 void VirtualDeviceWindow::log(const QString& msg)
