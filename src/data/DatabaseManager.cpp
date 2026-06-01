@@ -233,10 +233,11 @@ bool DatabaseManager::exportToCsv(
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text))
         return false;
 
+    file.write("\xEF\xBB\xBF", 3);
+
     QTextStream out(&file);
     out.setEncoding(QStringConverter::Utf8);
-    out << "\xEF\xBB\xBF";
-    out << "时间,温度(℃),湿度(%),压力(MPa),CO2(ppm),门状态,状态\n";
+    out << "时间,温度(℃),湿度(%),压力(MPa),CO₂(ppm),门状态,状态\r\n";
     for (const auto& data : dataList) {
         out << data.timestamp.toString("yyyy-MM-dd hh:mm:ss") << ","
             << QString::number(data.temperature, 'f', 1) << ","
@@ -244,7 +245,7 @@ bool DatabaseManager::exportToCsv(
             << QString::number(data.pressure,    'f', 4) << ","
             << QString::number(data.co2,         'f', 0) << ","
             << (data.doorOpen ? "开" : "关") << ","
-            << data.statusCode << "\n";
+            << data.statusCode << "\r\n";
     }
     return true;
 }

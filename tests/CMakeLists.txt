@@ -33,3 +33,26 @@ target_link_libraries(AlarmCheckerTest PRIVATE
 )
 
 add_test(NAME AlarmCheckerTest COMMAND AlarmCheckerTest)
+
+qt_add_executable(DatabaseManagerTest
+    tst_databasemanager.cpp
+    ../src/data/DatabaseManager.cpp
+    ../src/data/DatabaseManager.h
+    ../src/data/DatabaseWorker.cpp
+    ../src/data/DatabaseWorker.h
+    ../src/data/DeviceData.h
+    ../src/alarm/AlarmChecker.cpp
+    ../src/alarm/AlarmChecker.h
+)
+
+target_include_directories(DatabaseManagerTest PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+)
+
+target_link_libraries(DatabaseManagerTest PRIVATE
+    Qt6::Core
+    Qt6::Sql
+    Qt6::Test
+)
+
+add_test(NAME DatabaseManagerTest COMMAND DatabaseManagerTest)

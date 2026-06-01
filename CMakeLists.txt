@@ -76,6 +76,13 @@ if(WIN32)
     )
 endif()
 
+add_custom_command(TARGET QtDeviceMonitor POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:QtDeviceMonitor>/docs"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/docs/virtual_serial_device.py"
+        "$<TARGET_FILE_DIR:QtDeviceMonitor>/docs/virtual_serial_device.py"
+)
+
 add_subdirectory(virtual_device)
 
 enable_testing()

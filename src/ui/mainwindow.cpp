@@ -116,12 +116,16 @@ void MainWindow::setupUI()
     m_tcpConnBtn->setFixedHeight(35);
     m_serialConnBtn = new QPushButton("连接串口", this);
     m_serialConnBtn->setFixedHeight(35);
+    m_virtualSerialBtn = new QPushButton("启动模拟器(COM5)", this);
+    m_virtualSerialBtn->setFixedHeight(35);
+    m_virtualSerialBtn->setToolTip("启动 docs/virtual_serial_device.py，占用 COM5 发送数据；上位机请连接配对端 COM6");
 
     QHBoxLayout* connLayout = new QHBoxLayout();
     connLayout->addWidget(m_connLabel);
     connLayout->addStretch();
     connLayout->addWidget(m_tcpConnBtn);
     connLayout->addWidget(m_serialConnBtn);
+    connLayout->addWidget(m_virtualSerialBtn);
     mainLayout->addLayout(connLayout);
 
     m_chartWidget = new ChartWidget(this);
@@ -146,6 +150,8 @@ void MainWindow::setupUI()
             this, &MainWindow::onTcpConnectClicked);
     connect(m_serialConnBtn, &QPushButton::clicked,
             this, &MainWindow::onSerialConnect);
+    connect(m_virtualSerialBtn, &QPushButton::clicked,
+            this, &MainWindow::onVirtualSerialToggle);
 }
 
 void MainWindow::connectSignals()
@@ -166,6 +172,8 @@ void MainWindow::connectSignals()
             this, &MainWindow::onDatabaseError);
     connect(m_controller, &DeviceMonitorController::recordCountChanged,
             this, &MainWindow::updateStatusBar);
+    connect(m_controller, &DeviceMonitorController::virtualSerialDeviceStateChanged,
+            this, &MainWindow::onVirtualSerialStateChanged);
 }
 
 void MainWindow::initializeServices()
@@ -239,6 +247,15 @@ void MainWindow::onSerialConnect()
     SerialConfigDialog dlg(this);
     if (dlg.exec() == QDialog::Accepted) {
         m_controller->startSerial(dlg.getConfig());
+    }
+}
+
+void MainWindow::onVirtualSerialToggle()
+{
+    if (m_controller->isVirtualSerialDeviceRunning()) {
+        m_controller->stopVirtualSerialDevice();
+    } else {
+        m_controller->startVirtualSerialDevice("COM5", 9600, 100);
     }
 }
 
@@ -329,6 +346,12 @@ void MainWindow::onCommunicationError(const QString& message)
 
 void MainWindow::onDatabaseError(const QString& message)
 {
+    statusBar()->showMessage(message, 5000);
+}
+
+void MainWindow::onVirtualSerialStateChanged(bool running, const QString& message)
+{
+    m_virtualSerialBtn->setText(running ? "停止模拟器(COM5)" : "启动模拟器(COM5)");
     statusBar()->showMessage(message, 5000);
 }
 

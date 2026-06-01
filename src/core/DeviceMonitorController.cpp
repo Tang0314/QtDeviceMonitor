@@ -5,7 +5,12 @@
 #include "mock/MockDataGenerator.h"
 #include "mock/VirtualTcpDevice.h"
 
+#include <QCoreApplication>
 #include <QDebug>
+#include <QDir>
+#include <QFileInfo>
+#include <QRegularExpression>
+#include <QStandardPaths>
 
 QString dataSourceName(DataSource source)
 {
@@ -30,6 +35,7 @@ DeviceMonitorController::DeviceMonitorController(QObject* parent)
     , m_serialComm(new SerialComm(this))
     , m_alarmChecker(new AlarmChecker(this))
     , m_dbManager(new DatabaseManager(this))
+    , m_virtualSerialProcess(new QProcess(this))
 {
     loadAlarmConfigs();
     applyAlarmConfigs();
@@ -56,10 +62,22 @@ DeviceMonitorController::DeviceMonitorController(QObject* parent)
             this, &DeviceMonitorController::alarmCleared);
     connect(m_alarmChecker, &AlarmChecker::alarmTriggered,
             m_dbManager, &DatabaseManager::saveAlarm);
+
+    m_virtualSerialProcess->setProcessChannelMode(QProcess::MergedChannels);
+    connect(m_virtualSerialProcess, &QProcess::started,
+            this, &DeviceMonitorController::handleVirtualSerialStarted);
+    connect(m_virtualSerialProcess,
+            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this, &DeviceMonitorController::handleVirtualSerialFinished);
+    connect(m_virtualSerialProcess, &QProcess::errorOccurred,
+            this, &DeviceMonitorController::handleVirtualSerialError);
+    connect(m_virtualSerialProcess, &QProcess::readyReadStandardOutput,
+            this, &DeviceMonitorController::handleVirtualSerialOutput);
 }
 
 DeviceMonitorController::~DeviceMonitorController()
 {
+    stopVirtualSerialDevice();
     stop();
     m_dbManager->flush();
 }
@@ -123,6 +141,11 @@ quint16 DeviceMonitorController::tcpPort() const
     return m_configManager.loadTcpPort();
 }
 
+bool DeviceMonitorController::isVirtualSerialDeviceRunning() const
+{
+    return m_virtualSerialProcess->state() != QProcess::NotRunning;
+}
+
 void DeviceMonitorController::startMock(int intervalMs)
 {
     setDataSource(DataSource::Mock);
@@ -166,6 +189,58 @@ bool DeviceMonitorController::startSerial(const SerialConfig& config)
     emit dataSourceChanged(m_dataSource);
     emit connectionStatusChanged("● 已连接串口 " + config.portName, "green");
     return true;
+}
+
+void DeviceMonitorController::startVirtualSerialDevice(
+    const QString& port,
+    int baudRate,
+    int intervalMs)
+{
+    if (isVirtualSerialDeviceRunning()) {
+        emit virtualSerialDeviceStateChanged(true, "串口模拟器已在运行");
+        return;
+    }
+
+    const QString python = findPythonExecutable();
+    if (python.isEmpty()) {
+        emit virtualSerialDeviceStateChanged(false, "未找到 Python，请先安装 Python 或将 py/python 加入 PATH");
+        return;
+    }
+
+    const QString scriptPath = virtualSerialScriptPath();
+    if (!QFileInfo::exists(scriptPath)) {
+        emit virtualSerialDeviceStateChanged(false, "未找到脚本: " + scriptPath);
+        return;
+    }
+
+    QStringList args;
+    args << scriptPath
+         << "--port" << port
+         << "--baud" << QString::number(baudRate)
+         << "--interval-ms" << QString::number(intervalMs)
+         << "--log-every" << "10";
+
+    m_virtualSerialProcess->setProgram(python);
+    m_virtualSerialProcess->setArguments(args);
+    m_virtualSerialProcess->setWorkingDirectory(QFileInfo(scriptPath).absolutePath());
+    m_virtualSerialStopRequested = false;
+    m_virtualSerialProcess->start();
+    emit virtualSerialDeviceStateChanged(true, "串口模拟器启动中...");
+}
+
+void DeviceMonitorController::stopVirtualSerialDevice()
+{
+    if (!isVirtualSerialDeviceRunning()) {
+        emit virtualSerialDeviceStateChanged(false, "串口模拟器未运行");
+        return;
+    }
+
+    m_virtualSerialStopRequested = true;
+    m_virtualSerialProcess->terminate();
+    if (!m_virtualSerialProcess->waitForFinished(2000)) {
+        m_virtualSerialProcess->kill();
+        m_virtualSerialProcess->waitForFinished(1000);
+    }
 }
 
 void DeviceMonitorController::stop()
@@ -251,6 +326,69 @@ void DeviceMonitorController::handleSerialError(const QString& msg)
     }
 }
 
+void DeviceMonitorController::handleVirtualSerialStarted()
+{
+    emit virtualSerialDeviceStateChanged(true, "串口模拟器运行中");
+}
+
+void DeviceMonitorController::handleVirtualSerialFinished(
+    int exitCode,
+    QProcess::ExitStatus exitStatus)
+{
+    const bool stopRequested = m_virtualSerialStopRequested;
+    m_virtualSerialStopRequested = false;
+
+    if (stopRequested || (exitStatus == QProcess::NormalExit && exitCode == 0)) {
+        emit virtualSerialDeviceStateChanged(false, "串口模拟器已停止");
+    } else {
+    emit virtualSerialDeviceStateChanged(
+            false,
+            QString("串口模拟器异常退出，exit=%1；COM5 可能已被占用，应用请连接配对端 COM6")
+                .arg(exitCode));
+    }
+}
+
+void DeviceMonitorController::handleVirtualSerialError(QProcess::ProcessError error)
+{
+    QString message;
+    switch (error) {
+    case QProcess::FailedToStart:
+        message = "串口模拟器启动失败";
+        break;
+    case QProcess::Crashed:
+        message = "串口模拟器进程崩溃";
+        break;
+    case QProcess::Timedout:
+        message = "串口模拟器进程超时";
+        break;
+    case QProcess::WriteError:
+        message = "串口模拟器写入失败";
+        break;
+    case QProcess::ReadError:
+        message = "串口模拟器读取失败";
+        break;
+    case QProcess::UnknownError:
+        message = "串口模拟器未知错误";
+        break;
+    }
+    emit virtualSerialDeviceStateChanged(isVirtualSerialDeviceRunning(), message);
+}
+
+void DeviceMonitorController::handleVirtualSerialOutput()
+{
+    const QString output = QString::fromLocal8Bit(m_virtualSerialProcess->readAllStandardOutput()).trimmed();
+    if (!output.isEmpty()) {
+        qInfo().noquote() << "[virtual_serial_device]" << output;
+        if (output.contains("serial error", Qt::CaseInsensitive)
+            || output.contains("PermissionError", Qt::CaseInsensitive)
+            || output.contains(QRegularExpression("Access.*denied", QRegularExpression::CaseInsensitiveOption))) {
+            emit virtualSerialDeviceStateChanged(
+                false,
+                "串口模拟器无法打开 COM5；请先断开占用 COM5 的连接，应用应连接 COM6");
+        }
+    }
+}
+
 void DeviceMonitorController::loadAlarmConfigs()
 {
     m_tempConfig = m_configManager.loadTempConfig();
@@ -308,4 +446,43 @@ void DeviceMonitorController::resetCollectionStats()
     m_recordCount = 0;
     m_collectStartTime = QDateTime::currentDateTime();
     emit recordCountChanged(m_recordCount);
+}
+
+QString DeviceMonitorController::findPythonExecutable() const
+{
+    const QStringList candidates = {
+        "py",
+        "python",
+        "python3"
+    };
+
+    for (const QString& candidate : candidates) {
+        const QString executable = QStandardPaths::findExecutable(candidate);
+        if (!executable.isEmpty()) {
+            return executable;
+        }
+    }
+    return QString();
+}
+
+QString DeviceMonitorController::virtualSerialScriptPath() const
+{
+    const QDir appDir(QCoreApplication::applicationDirPath());
+    const QString deployedPath = appDir.filePath("docs/virtual_serial_device.py");
+    if (QFileInfo::exists(deployedPath)) {
+        return deployedPath;
+    }
+
+    QDir sourceDir(QCoreApplication::applicationDirPath());
+    for (int i = 0; i < 6; ++i) {
+        const QString candidate = sourceDir.filePath("docs/virtual_serial_device.py");
+        if (QFileInfo::exists(candidate)) {
+            return candidate;
+        }
+        if (!sourceDir.cdUp()) {
+            break;
+        }
+    }
+
+    return QDir::current().filePath("docs/virtual_serial_device.py");
 }

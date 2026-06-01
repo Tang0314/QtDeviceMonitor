@@ -19,6 +19,7 @@
 - 🔀 数据源状态机（Mock/TCP/串口三种模式互斥切换）
 - 🌐 TCP通信（含内置虚拟TCP设备，支持断线重连）
 - 🔌 串口通信（支持波特率/数据位/校验位配置）
+- ▶️ 界面内启动/停止 Python 串口模拟器
 - 🔧 内置Mock数据生成器（共享公式，无需硬件即可运行）
 - 🐍 Python虚拟串口脚本（配合虚拟串口工具测试）
 - 📝 文件日志系统（按日期记录，便于排查问题）
@@ -82,11 +83,15 @@ ctest --test-dir build/debug --output-on-failure
 ### 串口模式
 1. 安装虚拟串口工具（HHD Virtual Serial Port Tools）
 2. 创建 COM5 ↔ COM6 虚拟串口对
-3. 运行虚拟设备脚本：
-```bash
-py docs/virtual_serial_device.py
-```
+3. 点击主界面的「启动模拟器(COM5)」，程序会启动 `docs/virtual_serial_device.py`，默认占用 COM5 发送数据
 4. 点击「连接串口」，选择 COM6，波特率 9600
+
+注意：COM5 是模拟器发送端，COM6 是上位机接收端。不要让模拟器和上位机同时连接 COM5；串口通常是独占资源，同一个端口被占用时另一个程序会打开失败。
+
+也可以手动运行虚拟设备脚本：
+```bash
+py docs/virtual_serial_device.py --port COM5 --baud 9600 --interval-ms 100
+```
 
 ### 设置报警阈值
 菜单 → 设置 → 报警阈值（重启后自动恢复）

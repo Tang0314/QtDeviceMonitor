@@ -7,6 +7,7 @@
 
 #include <QDateTime>
 #include <QObject>
+#include <QProcess>
 #include <QString>
 
 class DatabaseManager;
@@ -47,11 +48,16 @@ public:
 
     QString tcpHost() const;
     quint16 tcpPort() const;
+    bool isVirtualSerialDeviceRunning() const;
 
 public slots:
     void startMock(int intervalMs = 100);
     void startTcp(const QString& host, quint16 port, bool useBuiltInVirtualDevice = true);
     bool startSerial(const SerialConfig& config);
+    void startVirtualSerialDevice(const QString& port = "COM5",
+                                  int baudRate = 9600,
+                                  int intervalMs = 100);
+    void stopVirtualSerialDevice();
     void stop();
     void updateAlarmConfigs(const AlarmConfig& tempConfig,
                             const AlarmConfig& humConfig,
@@ -67,6 +73,7 @@ signals:
     void communicationError(const QString& message);
     void databaseError(const QString& message);
     void recordCountChanged(int count);
+    void virtualSerialDeviceStateChanged(bool running, const QString& message);
 
 private slots:
     void handleData(const DeviceData& data);
@@ -74,6 +81,10 @@ private slots:
     void handleTcpError(const QString& msg);
     void handleSerialStateChanged(bool connected);
     void handleSerialError(const QString& msg);
+    void handleVirtualSerialStarted();
+    void handleVirtualSerialFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void handleVirtualSerialError(QProcess::ProcessError error);
+    void handleVirtualSerialOutput();
 
 private:
     void loadAlarmConfigs();
@@ -81,6 +92,8 @@ private:
     void setDataSource(DataSource source);
     void stopCurrentSource();
     void resetCollectionStats();
+    QString findPythonExecutable() const;
+    QString virtualSerialScriptPath() const;
 
     MockDataGenerator* m_mockGenerator;
     VirtualTcpDevice*  m_virtualDevice;
@@ -88,6 +101,8 @@ private:
     SerialComm*        m_serialComm;
     AlarmChecker*      m_alarmChecker;
     DatabaseManager*   m_dbManager;
+    QProcess*          m_virtualSerialProcess;
+    bool               m_virtualSerialStopRequested = false;
     ConfigManager      m_configManager;
 
     AlarmConfig m_tempConfig;

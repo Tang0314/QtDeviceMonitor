@@ -23,6 +23,7 @@ private slots:
     void onStartStopClicked();
     void onTcpConnectClicked();
     void onSerialConnect();
+    void onVirtualSerialToggle();
     void onAlarmTriggered(const AlarmEvent& event);
     void onAlarmCleared(const QString& channel);
     void onExportCsv();
@@ -33,6 +34,7 @@ private slots:
     void onConnectionStatusChanged(const QString& text, const QString& colorName);
     void onCommunicationError(const QString& message);
     void onDatabaseError(const QString& message);
+    void onVirtualSerialStateChanged(bool running, const QString& message);
 
 private:
     void setupUI();
@@ -52,6 +54,7 @@ private:
     QPushButton* m_startStopBtn = nullptr;
     QPushButton* m_tcpConnBtn = nullptr;
     QPushButton* m_serialConnBtn = nullptr;
+    QPushButton* m_virtualSerialBtn = nullptr;
     ChartWidget* m_chartWidget = nullptr;
     QListWidget* m_alarmList = nullptr;
 

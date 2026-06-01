@@ -4,6 +4,7 @@
 
 ### 新增
 - DeviceMonitorController：新增核心控制器层，统一采集生命周期、数据源互斥切换、报警检测和数据库写入编排。
+- 主界面新增“启动/停止串口模拟器”按钮，可直接管理 docs/virtual_serial_device.py。
 - DatabaseWorker：数据库写入线程增加定时 flush，降低异常退出时最近数据丢失风险。
 - DataParser：新增 ParseResult，返回解析失败原因，便于通信层记录坏帧。
 - Qt Test：新增 DataParserTest 和 AlarmCheckerTest，并通过 CTest 集成到根 CMake。
@@ -17,6 +18,7 @@
 - 报警配置增加归一化防御，配置文件异常时回退到默认阈值。
 - 日志系统增加重复安装保护、UTF-8 输出和 shutdown 清理。
 - 独立 VirtualDevice GUI 复用 MockDataFormulas，避免与主程序内置虚拟设备数据公式漂移。
+- Python 串口模拟脚本支持 --port、--baud、--interval-ms、--log-every 参数，并能响应进程终止信号。
 
 ### 修复
 - TcpComm::connectToDevice 重新启用自动重连，避免主动断开后再次连接不再重连。
